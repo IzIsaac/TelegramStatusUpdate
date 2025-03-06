@@ -1,6 +1,8 @@
 from google.oauth2.service_account import Credentials
 import gspread
 import pandas as pd
+import base64
+import tempfile
 import re
 import os
 from dotenv import load_dotenv
@@ -18,17 +20,33 @@ TWILIO_PHONE_NUMBER = os.getenv("Twilio_Phone_Number")
 # print("Twilio Auth Token:", TWILIO_AUTH_TOKEN)
 # print("Twilio Phone Number:", TWILIO_PHONE_NUMBER)
 
-# Step 1: Authenticate & Connect to Google Sheets
-scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-credentials = Credentials.from_service_account_file(r"C:\Users\user\Documents\Python\Excel\service_account.json", scopes=scope)
-client = gspread.authorize(credentials)
 
-# Step 2: Open Google Sheet
+# Step 1: Decode the base64 credentials
+credentials_data = os.getenv('Google_Sheet_Credentials')
+if credentials_data:
+    credentials_json = base64.b64decode(credentials_data)
+
+    # Create a temporary file to store the credentials
+    with tempfile.NamedTemporaryFile(delete=False, mode='wb') as temp_file:
+        temp_file.write(credentials_json)
+        temp_file_path = temp_file.name
+
+    # Step 2: Authenticate & Connect to Google Sheets
+    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+    credentials = Credentials.from_service_account_file(temp_file_path, scopes=scope)
+    client = gspread.authorize(credentials)
+    
+    # Clean up temporary file (optional)
+    os.remove(temp_file_path)
+else:
+    print("❌ Error: Google Sheets credentials not found in environment variables.")
+
+# Step 3: Open Google Sheet
 google_sheets_url = "https://docs.google.com/spreadsheets/d/1hGW7Fth6gpdp6FcWsvqo32OHfFlH0IHci8z-mKi1qnQ/edit"
 sheet = client.open_by_url(google_sheets_url)
 print("✅ Successfully connected to Google Sheets!")
 
-# Step 3: User Inputs
+# Step 4: User Inputs
 print("Enter the status message (Press Enter twice to finish):")
 message = ""
 while True:
@@ -39,7 +57,7 @@ while True:
 
 print("Received Message:\n", message)
 
-# Step 4: Define Official Status Mapping
+# Step 5: Define Official Status Mapping
 status_mapping = {
     "PRESENT": "PRESENT",
     "ATTACH IN": "ATTACH IN",
@@ -58,7 +76,7 @@ status_mapping = {
     "MA": "MA"
 }
 
-# Step 5: Extract Fields
+# Step 6: Extract Fields
 # Extract Status and Location (if in "Status:")
 status_match = re.search(r"Status:\s*([A-Z]+(?:\s+[A-Z]+)?)\s*(?:\s*@\s*(.+))?$", message, re.IGNORECASE | re.MULTILINE)
 raw_status = status_match.group(1).strip() if status_match else "Unknown"
@@ -134,7 +152,7 @@ print("Extracted Date:", date_text)
 print("Extracted Reason:", reason)
 print("Sheets to update:", sheets_to_update)
 
-# Step 6: Update Google Sheets for each sheet
+# Step 7: Update Google Sheets for each sheet
 for sheet_name in sheets_to_update:
     worksheet = sheet.worksheet(sheet_name)
     data = worksheet.get_all_values()
