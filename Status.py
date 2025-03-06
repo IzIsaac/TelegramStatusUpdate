@@ -2,6 +2,21 @@ from google.oauth2.service_account import Credentials
 import gspread
 import pandas as pd
 import re
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env
+load_dotenv()
+
+# Accessing the variables
+TWILIO_ACCOUNT_SID = os.getenv("Twilio_Account_SID")
+TWILIO_AUTH_TOKEN = os.getenv("Twilio_Auth_Token")
+TWILIO_PHONE_NUMBER = os.getenv("Twilio_Phone_Number")
+
+# Print to check if values are loaded (remove in production)
+# print("Twilio SID:", TWILIO_ACCOUNT_SID)
+# print("Twilio Auth Token:", TWILIO_AUTH_TOKEN)
+# print("Twilio Phone Number:", TWILIO_PHONE_NUMBER)
 
 # Step 1: Authenticate & Connect to Google Sheets
 scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
