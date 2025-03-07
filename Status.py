@@ -21,7 +21,8 @@ TWILIO_PHONE_NUMBER = os.getenv("Twilio_Phone_Number")
 # print("Twilio Phone Number:", TWILIO_PHONE_NUMBER)
 
 # Step 1: Decode the base64 credentials
-credentials_data = os.getenv('Google_Sheet_Credentials')
+print(f"Env Variable Found: {os.getenv('Sheets_Credentials') is not None}")
+credentials_data = os.getenv('Google_Sheets_Credentials')
 if credentials_data:
     credentials_json = base64.b64decode(credentials_data)
 
