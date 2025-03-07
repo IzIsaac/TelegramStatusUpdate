@@ -1,0 +1,13 @@
+flask
+twilio
+gspread
+pandas
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+google-auth-service-account
+oauth2client
+python-dotenv
+base64
+re
+os
