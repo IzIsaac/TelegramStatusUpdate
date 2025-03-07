@@ -42,7 +42,7 @@ else:
     print("❌ Error: Google Sheets credentials not found in environment variables.")
 
 # Step 3: Open Google Sheet
-google_sheets_url = "https://docs.google.com/spreadsheets/d/1hGW7Fth6gpdp6FcWsvqo32OHfFlH0IHci8z-mKi1qnQ/edit"
+google_sheets_url = os.getenv("google_sheets_url")
 sheet = client.open_by_url(google_sheets_url)
 print("✅ Successfully connected to Google Sheets!")
 
