@@ -58,6 +58,32 @@ print("✅ Successfully connected to Google Sheets!")
 #     message += line + "\n"
 # 
 # print("Received Message:\n", message)
+
+
+app = Flask(__name__)
+
+# Route to check if the server is running
+@app.route("/", methods=["GET"])
+def home():
+    return "Flask server is running!", 200
+
+# Route to handle incoming webhook messages from Twilio
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    incoming_msg = request.values.get("Body", "").strip()
+    sender = request.values.get("From", "")
+
+    # Simple response
+    response = MessagingResponse()
+    response.message(f"Received: {incoming_msg} from {sender}")
+
+    return str(response)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+
+
+'''
 app = Flask(__name__)
 
 # Route to check if the server is running
@@ -91,7 +117,7 @@ def receive_whatsapp_message():
     resp = MessagingResponse()
     resp.message(response_text)
     return str(resp)
-
+'''
 # Step 5: Define Official Status Mapping
 status_mapping = {
     "PRESENT": "PRESENT",
@@ -240,7 +266,7 @@ def process_message(message):
     status, location, names, date_text, reason, sheets_to_update = extract_message(message)
     update_sheet(status, location, names, date_text, reason, sheets_to_update)
 
-if __name__ == "__main__":
-    from waitress import serve  # More efficient than Flask's built-in server
-    port = int(os.getenv("PORT", 8080))
-    serve(app, host="0.0.0.0", port=port)
+# if __name__ == "__main__":
+#     from waitress import serve  # More efficient than Flask's built-in server
+#     port = int(os.getenv("PORT", 8080))
+#     serve(app, host="0.0.0.0", port=port)
