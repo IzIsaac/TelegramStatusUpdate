@@ -225,5 +225,6 @@ def process_message(message):
     update_sheet(status, location, names, date_text, reason, sheets_to_update)
 
 if __name__ == "__main__":
+    from waitress import serve  # More efficient than Flask's built-in server
     port = int(os.getenv("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    serve(app, host="0.0.0.0", port=port)
