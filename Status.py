@@ -63,13 +63,13 @@ app = Flask(__name__)
 
 def receive_whatsapp_message():
     # Webhook to receive WhatsApp messages from Twilio.
-    incoming_msg = request.values.get("Body", "").strip()  # Get message text from Twilio
+    message = request.values.get("Body", "").strip()  # Get message text from Twilio
     sender = request.values.get("From", "")  # Get sender's number
     
-    print(f"📩 New message from {sender}: {incoming_msg}")  # Debugging
+    print(f"📩 New message from {sender}: {message}")  # Debugging
 
     # Process message (extract info & update Google Sheets)
-    response_text = process_message(incoming_msg) # process_message function needs to be defined
+    response_text = process_message(message)
 
     # Send a reply
     resp = MessagingResponse()
@@ -100,7 +100,7 @@ status_mapping = {
 }
 
 # Step 6: Extract Fields
-def process_message(message):
+def extract_message(message):
     # Extract Status and Location (if in "Status:")
     status_match = re.search(r"Status:\s*([A-Z]+(?:\s+[A-Z]+)?)\s*(?:\s*@\s*(.+))?$", message, re.IGNORECASE | re.MULTILINE)
     raw_status = status_match.group(1).strip() if status_match else "Unknown"
@@ -175,6 +175,7 @@ def process_message(message):
     print("Extracted Date:", date_text)
     print("Extracted Reason:", reason)
     print("Sheets to update:", sheets_to_update)
+    return status, location, names, date_text, reason, sheets_to_update
 
 # Step 7: Update Google Sheets for each sheet
 def update_sheet(status, location, names, date_text, reason, sheets_to_update):
@@ -218,6 +219,10 @@ def update_sheet(status, location, names, date_text, reason, sheets_to_update):
             print(f"✅ Successfully updated {name}'s record in {sheet_name} sheet (Row {row_index})")
 
     print("✅ All updates completed!")
+
+def process_message(message):
+    status, location, names, date_text, reason, sheets_to_update = extract_message(message)
+    update_sheet(status, location, names, date_text, reason, sheets_to_update)
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
