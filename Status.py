@@ -226,5 +226,5 @@ def process_message(message):
 
 if __name__ == "__main__":
     from waitress import serve  # More efficient than Flask's built-in server
-    port = int(os.getenv("PORT", 5000))
+    port = int(os.getenv("PORT", 8080))
     serve(app, host="0.0.0.0", port=port)
