@@ -59,7 +59,23 @@ print("✅ Successfully connected to Google Sheets!")
 # 
 # print("Received Message:\n", message)
 app = Flask(__name__)
+
+# Route to check if the server is running
+@app.route("/", methods=["GET"])
+def home():
+    return "Flask server is running!", 200
+
 @app.route("/webhook", methods=["POST"])
+
+def webhook():
+    incoming_msg = request.values.get("Body", "").strip()
+    sender = request.values.get("From", "")
+
+    # Simple response
+    response = MessagingResponse()
+    response.message(f"Received: {incoming_msg} from {sender}")
+
+    return str(response)
 
 def receive_whatsapp_message():
     # Webhook to receive WhatsApp messages from Twilio.
