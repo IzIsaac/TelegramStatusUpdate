@@ -110,7 +110,7 @@ def webhook():
     response.message(f"📌 Extracted Status: {status}")
     response.message(f"📍 Location: {location}")
     response.message(f"👥 Names: {', '.join(names) if names else 'None'}")
-    response.message(f"📅 Date: {date_text}")
+    response.message(f"📅 Dates: {date_text}")
     response.message(f"📄 Reason: {reason}")
 
     # # Process message (extract info & update Google Sheets)
@@ -188,8 +188,8 @@ def extract_message(message):
     names = [" ".join(name.split()[1:]) for name in name_lines if len(name.split()) > 1]
 
     # Extract Date and determine which sheets to update
-    date_match = re.search(r"Dates?:\s*(\d{2}/\d{2}/\d{2,4})(?:\s*\(?(AM|PM)?\)?)?", message, re.IGNORECASE)
-    date_text = date_match.group(1) if date_match else "Unknown"
+    date_match = re.search(r"Dates?\s*:?\s*(\d{2}/\d{2}/\d{2,4})(?:\s*\(?(AM|PM)?\)?)?", message, re.IGNORECASE)
+    date_text = date_match.group(1) if date_match else ""
     period = date_match.group(2) if date_match and date_match.group(2) else ""
 
     # Determine sheets to update
