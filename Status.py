@@ -84,7 +84,6 @@ print("✅ Successfully connected to Google Sheets!")
 #     app.run(host="0.0.0.0", port=port)
 
 
-
 app = Flask(__name__)
 
 # Route to check if the server is running
@@ -96,28 +95,31 @@ def home():
 @app.route("/webhook", methods=["POST"])
 
 def webhook():
-    incoming_msg = request.values.get("Body", "").strip()
+    # Webhook to receive WhatsApp messages from Twilio.
+    message = request.values.get("Body", "").strip()
     sender = request.values.get("From", "")
 
-    # Simple response
-    response = MessagingResponse()
-    response.message(f"Received: {incoming_msg} from {sender}")
-
-    return str(response)
-
-def receive_whatsapp_message():
-    # Webhook to receive WhatsApp messages from Twilio.
-    message = request.values.get("Body", "").strip()  # Get message text from Twilio
-    sender = request.values.get("From", "")  # Get sender's number
-    
     print(f"📩 New message from {sender}: \n{message}")  # Debugging
 
-    # Process message (extract info & update Google Sheets)
-    response_text = process_message(message)
+    # Process the message and extract details
+    status, location, names, date_text, reason, sheets_to_update = extract_message(message)
 
-    # Send a reply
+    # Send multiple messages
     response = MessagingResponse()
-    response.message(response_text)
+    response.message(f"✅ Received your message: {message}")
+    response.message(f"📌 Extracted Status: {status}")
+    response.message(f"📍 Location: {location}")
+    response.message(f"👥 Names: {', '.join(names) if names else 'None'}")
+    response.message(f"📅 Date: {date_text}")
+    response.message(f"📄 Reason: {reason}")
+
+    # # Process message (extract info & update Google Sheets)
+    # response_text = process_message(message)
+    # response.message(response_text)
+
+    # Update Google Sheets
+    update_sheet(status, location, names, date_text, reason, sheets_to_update)
+
     return str(response)
 
 # Step 5: Define Official Status Mapping
@@ -264,9 +266,9 @@ def update_sheet(status, location, names, date_text, reason, sheets_to_update):
 
     print("✅ All updates completed!")
 
-def process_message(message):
-    status, location, names, date_text, reason, sheets_to_update = extract_message(message)
-    update_sheet(status, location, names, date_text, reason, sheets_to_update)
+# def process_message(message):
+#     status, location, names, date_text, reason, sheets_to_update = extract_message(message)
+#     update_sheet(status, location, names, date_text, reason, sheets_to_update)
 
 if __name__ == "__main__":
     from waitress import serve  # More efficient than Flask's built-in server
