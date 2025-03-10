@@ -124,7 +124,15 @@ def extract_message(message):
     location = status_match.group(2).strip() if status_match and status_match.group(2) else ""
 
     # Convert status to official version
-    status = status_mapping.get(raw_status.upper(), "Invalid")
+    # status = status_mapping.get(raw_status.upper(), "Invalid")
+
+    for keyword in status_mapping.keys():
+        if keyword.upper() in raw_status.upper():  # Case-insensitive matching
+            status = status_mapping[keyword]  # Return mapped status
+            break
+        else:
+            status = "Invalid"
+
 
     if status == "Invalid":
         print(f"❌ Error: '{raw_status}' is not a valid status.")
