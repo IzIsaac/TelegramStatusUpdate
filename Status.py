@@ -59,31 +59,6 @@ print("✅ Successfully connected to Google Sheets!")
 # 
 # print("Received Message:\n", message)
 
-
-# app = Flask(__name__)
-
-# # Route to check if the server is running
-# @app.route("/", methods=["GET"])
-# def home():
-#     return "Flask server is running!", 200
-
-# # Route to handle incoming webhook messages from Twilio
-# @app.route("/webhook", methods=["POST"])
-# def webhook():
-#     incoming_msg = request.values.get("Body", "").strip()
-#     sender = request.values.get("From", "")
-
-#     # Simple response
-#     response = MessagingResponse()
-#     response.message(f"Received: {incoming_msg} from {sender}")
-
-#     return str(response)
-
-# if __name__ == "__main__":
-#     port = int(os.environ.get("PORT", 5000))
-#     app.run(host="0.0.0.0", port=port)
-
-
 app = Flask(__name__)
 
 # Route to check if the server is running
@@ -112,10 +87,6 @@ def webhook():
     response.message(f"👥 Names: {', '.join(names) if names else 'None'}")
     response.message(f"📅 Dates: {date_text}")
     response.message(f"📄 Reason: {reason}")
-
-    # # Process message (extract info & update Google Sheets)
-    # response_text = process_message(message)
-    # response.message(response_text)
 
     # Update Google Sheets
     update_sheet(status, location, names, date_text, reason, sheets_to_update)
@@ -189,9 +160,18 @@ def extract_message(message):
     names = [" ".join(name.split()[1:]) for name in name_lines if len(name.split()) > 1]
 
     # Extract Date and determine which sheets to update
-    date_match = re.search(r"Dates?\s*:?\s*(\d{2}/\d{2}/\d{2,4})(?:\s*\(?(AM|PM)?\)?)?", message, re.IGNORECASE)
-    date_text = date_match.group(1) if date_match else ""
-    period = date_match.group(2) if date_match and date_match.group(2) else ""
+    # date_match = re.search(r"Dates?\s*:?\s*(\d{2}/\d{2}/\d{2,4})(?:\s*\(?(AM|PM)?\)?)?", message, re.IGNORECASE)
+    # date_text = date_match.group(1) if date_match else ""
+    # period = date_match.group(2) if date_match and date_match.group(2) else ""
+
+    date_match = re.search(r"Dates?\s*:?\s*(.+)", message, re.IGNORECASE)
+    date_text = date_match.group(1).strip() if date_match else ""
+    period = ""
+    if "(AM)" in date_text.upper():
+        period = "AM"
+    elif "(PM)" in date_text.upper():
+        period = "PM"
+        
 
     # Determine sheets to update
     sheets_to_update = []
