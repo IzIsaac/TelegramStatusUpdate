@@ -100,8 +100,7 @@ status_mapping = {
     "DUTY": "DUTY",
     "UDO": "DUTY",
     "CDOS": "DUTY",
-    "GUARD DUTY": "DUTY",
-    "GUARD REST": "DUTY",
+    "GUARD": "DUTY",
     "WFH": "WFH",
     "OUTSTATION": "OUTSTATION",
     "BLOOD DONATION": "OUTSTATION",
@@ -171,7 +170,7 @@ def extract_message(message):
         period = "AM"
     elif "(PM)" in date_text.upper():
         period = "PM"
-        
+
 
     # Determine sheets to update
     sheets_to_update = []
