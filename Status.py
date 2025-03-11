@@ -81,12 +81,12 @@ def webhook():
 
     # Send multiple messages
     response = MessagingResponse()
-    response.message(f"✅ Received your message: {message}")
-    response.message(f"📌 Extracted Status: {status}")
-    response.message(f"📍 Location: {location}")
-    response.message(f"👥 Names: {', '.join(names) if names else 'None'}")
-    response.message(f"📅 Dates: {date_text}")
-    response.message(f"📄 Reason: {reason}")
+    response.message(f"✅ Received your message: {message}\n"
+                 f"📌 Status: {status}\n"
+                 f"📍 Location: {location}\n"
+                 f"👥 Names: {', '.join(names) if names else 'None'}\n"
+                 f"📅 Dates: {date_text}\n"
+                 f"📄 Reason: {reason}")
 
     # Update Google Sheets
     complete = update_sheet(status, location, names, date_text, reason, sheets_to_update)
