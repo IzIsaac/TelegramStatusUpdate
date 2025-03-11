@@ -89,7 +89,12 @@ def webhook():
     response.message(f"📄 Reason: {reason}")
 
     # Update Google Sheets
-    update_sheet(status, location, names, date_text, reason, sheets_to_update)
+    complete = update_sheet(status, location, names, date_text, reason, sheets_to_update)
+
+    if complete:
+        response.message("✅ All updates completed!")
+    else:
+        response.message("❌ Error: Check logs for issue...")
 
     return str(response)
 
@@ -252,6 +257,7 @@ def update_sheet(status, location, names, date_text, reason, sheets_to_update):
             print(f"✅ Successfully updated {name}'s record in {sheet_name} sheet (Row {row_index})")
 
     print("✅ All updates completed!")
+    return True
 
 # def process_message(message):
 #     status, location, names, date_text, reason, sheets_to_update = extract_message(message)
