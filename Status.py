@@ -133,7 +133,6 @@ def extract_message(message):
         else:
             status = "Invalid"
 
-
     if status == "Invalid":
         print(f"❌ Error: '{raw_status}' is not a valid status.")
         exit()
@@ -155,7 +154,7 @@ def extract_message(message):
             continue
 
         # Stop capturing names if "Dates:" is found
-        elif re.match(r"Dates:?", line, re.IGNORECASE):
+        elif re.match(r"Dates?\s*:?", line, re.IGNORECASE):
             name_section = False
             break  
 
