@@ -11,7 +11,7 @@ import os
 
 import requests
 import json
-from telegram import Bot
+from telegram.bot import Bot
 from telegram import ParseMode
 import logging
 
