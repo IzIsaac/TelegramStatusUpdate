@@ -60,16 +60,6 @@ sheet = client.open_by_url(google_sheets_url)
 print("✅ Successfully connected to Google Sheets!")
 
 # Step 4: User Inputs
-# print("Enter the status message (Press Enter twice to finish):")
-# message = ""
-# while True:
-#     line = input()
-#     if line == "":
-#         break
-#     message += line + "\n"
-# 
-# print("Received Message:\n", message)
-
 app = Flask(__name__)
 
 # Store pending updates (key: sender number, value: extracted info)
