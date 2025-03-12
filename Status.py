@@ -9,7 +9,7 @@ import tempfile
 import re
 import os
 
-from telegram import ParseMode
+from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, CallbackContext
 
 # Load environment variables from .env
@@ -170,7 +170,7 @@ def extract_message(message):
 
     if status == "Invalid":
         print(f"❌ Error: '{raw_status}' is not a valid status.")
-        exit()
+        return "❌ Invalid status detected.", 400
 
     # Extract Names (Handles "R/Name" with or without ":" and same-line names)
     name_lines = []
