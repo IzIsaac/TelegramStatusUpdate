@@ -9,11 +9,8 @@ import tempfile
 import re
 import os
 
-import requests
-import json
-from telegram import Update, ParseMode
+from telegram import ParseMode
 from telegram.ext import Application, CommandHandler, CallbackContext
-import logging
 
 # Load environment variables from .env
 load_dotenv()
@@ -25,13 +22,13 @@ load_dotenv()
 # TWILIO_SERVICE_SID = os.getenv("Twilio_Service_SID")
 
 # Telegram Bot Token
-TELEGRAM_TOKEN = 'Telegram_Token'
+TELEGRAM_TOKEN = os.getenv('Telegram_Token')
 # bot = Bot(token=TELEGRAM_TOKEN)
 
 application = Application.builder().token(TELEGRAM_TOKEN).build()
 
 # Example command handler, like /start
-async def start(update: Update, context: CallbackContext) -> None:
+async def start(update, context):
     await update.message.reply_text('Hello! I\'m your bot!')
 
 # Adding the handler to the application
