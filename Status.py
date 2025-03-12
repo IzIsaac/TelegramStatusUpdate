@@ -11,8 +11,8 @@ import os
 
 import requests
 import json
-from telegram import Bot
-from telegram import ParseMode
+from telegram import Update, ParseMode
+from telegram.ext import Application, CommandHandler, CallbackContext
 import logging
 
 # Load environment variables from .env
@@ -26,9 +26,22 @@ load_dotenv()
 
 # Telegram Bot Token
 TELEGRAM_TOKEN = 'Telegram_Token'
-bot = Bot(token=TELEGRAM_TOKEN)
+# bot = Bot(token=TELEGRAM_TOKEN)
+
+application = Application.builder().token(TELEGRAM_TOKEN).build()
+
+# Example command handler, like /start
+async def start(update: Update, context: CallbackContext) -> None:
+    await update.message.reply_text('Hello! I\'m your bot!')
+
+# Adding the handler to the application
+application.add_handler(CommandHandler("start", start))
+
+# Run the bot
+application.run_polling()
 
 
+'''
 # Step 1: Decode the base64 credentials
 print(f"Env Variable Found: {os.getenv('Google_Sheets_Credentials') is not None}")
 credentials_data = os.getenv('Google_Sheets_Credentials')
@@ -392,4 +405,5 @@ def handle_interactive_response(chat_id, callback_data):
 if __name__ == "__main__":
     from waitress import serve  # More efficient than Flask's built-in server
     port = int(os.getenv("PORT", 8080))
-    serve(app, host="0.0.0.0", port=port)
+    serve(app, host="0.0.0.0", port=port)'
+    '''
