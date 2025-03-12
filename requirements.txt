@@ -1,5 +1,5 @@
 flask
-twilio
+telegram
 gspread
 pandas
 google-auth
@@ -7,3 +7,5 @@ google-auth-oauthlib
 google-auth-httplib2
 python-dotenv
 waitress
+requests
+logging
