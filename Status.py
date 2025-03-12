@@ -342,7 +342,7 @@ def send_confirmation_message(chat_id, extracted_info):
         {'text': '❌ Cancel', 'callback_data': 'cancel_update'}
     ]]
 
-    bot.send_message(chat_id, text, reply_markup={'inline_keyboard': keyboard}, parse_mode=ParseMode.MARKDOWN)
+    application.send_message(chat_id, text, reply_markup={'inline_keyboard': keyboard}, parse_mode=ParseMode.MARKDOWN)
 
 def handle_interactive_response(chat_id, callback_data):
     # Handles user responses to interactive buttons.
@@ -372,7 +372,7 @@ def handle_interactive_response(chat_id, callback_data):
     # return str(response)
 
     if chat_id not in updates:
-        bot.send_message(chat_id, "⚠ No pending update found.")
+        application.send_message(chat_id, "⚠ No pending update found.")
         return
 
     if callback_data == "confirm_update":
@@ -383,12 +383,12 @@ def handle_interactive_response(chat_id, callback_data):
         )
 
         if complete:
-            bot.send_message(chat_id, "✅ Status update successful!")
+            application.send_message(chat_id, "✅ Status update successful!")
         else:
-            bot.send_message(chat_id, "❌ Error updating the sheet. Please try again.")
+            application.send_message(chat_id, "❌ Error updating the sheet. Please try again.")
     elif callback_data == "cancel_update":
         updates.pop(chat_id, None)
-        bot.send_message(chat_id, "❌ Update cancelled.")
+        application.send_message(chat_id, "❌ Update cancelled.")
 
 if __name__ == "__main__":
     from waitress import serve  # More efficient than Flask's built-in server
