@@ -11,7 +11,7 @@ import os
 
 import requests
 import json
-from telegram import Bot
+from telegram.ext import Application
 from telegram import ParseMode
 import logging
 
@@ -26,7 +26,9 @@ load_dotenv()
 
 # Telegram Bot Token
 TELEGRAM_TOKEN = 'Telegram_Token'
-bot = Bot(token=TELEGRAM_TOKEN)
+# bot = Bot(token=TELEGRAM_TOKEN)
+application = Application.builder().token(TELEGRAM_TOKEN).build()
+
 
 # Step 1: Decode the base64 credentials
 print(f"Env Variable Found: {os.getenv('Google_Sheets_Credentials') is not None}")
