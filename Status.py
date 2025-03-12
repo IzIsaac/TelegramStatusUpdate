@@ -11,7 +11,7 @@ import os
 
 import requests
 import json
-from telegram.ext import Application
+from telegram import Bot
 from telegram import ParseMode
 import logging
 
@@ -26,8 +26,7 @@ load_dotenv()
 
 # Telegram Bot Token
 TELEGRAM_TOKEN = 'Telegram_Token'
-# bot = Bot(token=TELEGRAM_TOKEN)
-application = Application.builder().token(TELEGRAM_TOKEN).build()
+bot = Bot(token=TELEGRAM_TOKEN)
 
 
 # Step 1: Decode the base64 credentials
@@ -342,7 +341,7 @@ def send_confirmation_message(chat_id, extracted_info):
         {'text': '❌ Cancel', 'callback_data': 'cancel_update'}
     ]]
 
-    application.send_message(chat_id, text, reply_markup={'inline_keyboard': keyboard}, parse_mode=ParseMode.MARKDOWN)
+    bot.send_message(chat_id, text, reply_markup={'inline_keyboard': keyboard}, parse_mode=ParseMode.MARKDOWN)
 
 def handle_interactive_response(chat_id, callback_data):
     # Handles user responses to interactive buttons.
@@ -372,7 +371,7 @@ def handle_interactive_response(chat_id, callback_data):
     # return str(response)
 
     if chat_id not in updates:
-        application.send_message(chat_id, "⚠ No pending update found.")
+        bot.send_message(chat_id, "⚠ No pending update found.")
         return
 
     if callback_data == "confirm_update":
@@ -383,12 +382,12 @@ def handle_interactive_response(chat_id, callback_data):
         )
 
         if complete:
-            application.send_message(chat_id, "✅ Status update successful!")
+            bot.send_message(chat_id, "✅ Status update successful!")
         else:
-            application.send_message(chat_id, "❌ Error updating the sheet. Please try again.")
+            bot.send_message(chat_id, "❌ Error updating the sheet. Please try again.")
     elif callback_data == "cancel_update":
         updates.pop(chat_id, None)
-        application.send_message(chat_id, "❌ Update cancelled.")
+        bot.send_message(chat_id, "❌ Update cancelled.")
 
 if __name__ == "__main__":
     from waitress import serve  # More efficient than Flask's built-in server
