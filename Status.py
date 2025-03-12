@@ -1,4 +1,4 @@
-from twilio.twiml.messaging_response import MessagingResponse
+# from twilio.twiml.messaging_response import MessagingResponse
 from google.oauth2.service_account import Credentials
 from flask import Flask, request
 from dotenv import load_dotenv
@@ -9,13 +9,24 @@ import tempfile
 import re
 import os
 
+import requests
+import json
+from telegram import Bot
+from telegram import ParseMode
+import logging
+
 # Load environment variables from .env
 load_dotenv()
 
 # Accessing the variables
-TWILIO_ACCOUNT_SID = os.getenv("Twilio_Account_SID")
-TWILIO_AUTH_TOKEN = os.getenv("Twilio_Auth_Token")
-TWILIO_PHONE_NUMBER = os.getenv("Twilio_Phone_Number")
+# TWILIO_ACCOUNT_SID = os.getenv("Twilio_Account_SID")
+# TWILIO_AUTH_TOKEN = os.getenv("Twilio_Auth_Token")
+# TWILIO_PHONE_NUMBER = os.getenv("Twilio_Phone_Number")
+# TWILIO_SERVICE_SID = os.getenv("Twilio_Service_SID")
+
+# Telegram Bot Token
+TELEGRAM_TOKEN = 'Telegram_Token'
+bot = Bot(token=TELEGRAM_TOKEN)
 
 # Print to check if values are loaded (remove in production)
 # print("Twilio SID:", TWILIO_ACCOUNT_SID)
@@ -61,42 +72,65 @@ print("✅ Successfully connected to Google Sheets!")
 
 app = Flask(__name__)
 
+# Store pending updates (key: sender number, value: extracted info)
+updates = {}
+
 # Route to check if the server is running
 @app.route("/", methods=["GET"])
 def home():
     return "Flask server is running!", 200
 
-# Route to handle incoming webhook messages from Twilio
+# Route to handle incoming webhook messages from Telegram
 @app.route("/webhook", methods=["POST"])
-
 def webhook():
-    # Webhook to receive WhatsApp messages from Twilio.
-    message = request.values.get("Body", "").strip()
-    sender = request.values.get("From", "")
+    # Webhook to receive messages from Telegram.
+    # message = request.values.get("Body", "").strip()
+    # sender = request.values.get("From", "")
+    message = request.json
+    sender = message['message']['from']['id']
+    text = message['message']['text'].strip()
 
-    print(f"📩 New message from {sender}: \n{message}")  # Debugging
+    print(f"📩 New message from {sender}: \n{text}")  # Debugging
+
+
+    # # Check if user is replying with a button
+    # interactive_response = request.values.get("InteractiveResponseId")
+
+    # if interactive_response:
+    #     return handle_interactive_response(sender, interactive_response)
 
     # Process the message and extract details
-    status, location, names, date_text, reason, sheets_to_update = extract_message(message)
+    status, location, names, date_text, reason, sheets_to_update = extract_message(text)
 
-    # Send multiple messages
-    response = MessagingResponse()
-    response.message(f"✅ Received your message: {message}\n"
-                 f"📌 Status: {status}\n"
-                 f"📍 Location: {location}\n"
-                 f"👥 Names: {', '.join(names) if names else 'None'}\n"
-                 f"📅 Dates: {date_text}\n"
-                 f"📄 Reason: {reason}")
 
-    # Update Google Sheets
-    complete = update_sheet(status, location, names, date_text, reason, sheets_to_update)
+    # Store the extracted info in dictionary updates
+    updates[sender] = {
+        "status": status, "location": location, "names": names,
+        "date_text": date_text, "reason": reason, "sheets_to_update": sheets_to_update
+    }
 
-    if complete:
-        response.message("✅ All updates completed!")
-    else:
-        response.message("❌ Error: Check logs for issue...")
+    # Send quick reply buttons to confirm update
+    send_confirmation_message(sender, updates[sender])
 
-    return str(response)
+    # # Send multiple messages
+    # response = MessagingResponse()
+    # response.message(f"✅ Received your message: {message}\n"
+    #              f"📌 Status: {status}\n"
+    #              f"📍 Location: {location}\n"
+    #              f"👥 Names: {', '.join(names) if names else 'None'}\n"
+    #              f"📅 Dates: {date_text}\n"
+    #              f"📄 Reason: {reason}")
+
+    # # Update Google Sheets
+    # complete = update_sheet(status, location, names, date_text, reason, sheets_to_update)
+
+    # if complete:
+    #     response.message("✅ All updates completed!")
+    # else:
+    #     response.message("❌ Error: Check logs for issue...")
+
+    # return str(response)
+    return "OK", 200
 
 # Step 5: Define Official Status Mapping
 status_mapping = {
@@ -259,9 +293,115 @@ def update_sheet(status, location, names, date_text, reason, sheets_to_update):
     print("✅ All updates completed!")
     return True
 
-# def process_message(message):
-#     status, location, names, date_text, reason, sheets_to_update = extract_message(message)
-#     update_sheet(status, location, names, date_text, reason, sheets_to_update)
+# Step 8: Confirm status update
+def send_confirmation_message(chat_id, extracted_info):
+    # Sends a message with confirmation buttons to confirm or cancel update.
+    # url = "https://api.twilio.com/2010-04-01/Accounts/YOUR_ACCOUNT_SID/Messages.json"
+
+    # headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+    # data = {
+    #     "From": f"whatsapp:+{TWILIO_PHONE_NUMBER}",
+    #     "To": to,
+    #     "MessagingServiceSid": f"{TWILIO_SERVICE_SID}",
+    #     "Content-Type": "application/json",
+    #     "InteractiveMessage": json.dumps({
+    #         "type": "button",
+    #         "body": {
+    #             "text": f"✅ Recieved message\n"
+    #                     f"📌 Status: {extracted_info['status']}\n"
+    #                     f"📍 Location: {extracted_info['location']}\n"
+    #                     f"👥 Names: {', '.join(extracted_info['names'])}\n"
+    #                     f"📅 Dates: {extracted_info['date_text']}\n"
+    #                     f"📄 Reason: {extracted_info['reason']}\n\n"
+    #                     "Is this status correct?"
+    #         },
+    #         "action": {
+    #             "buttons": [
+    #                 {
+    #                     "type": "reply",
+    #                     "reply": {
+    #                         "id": "confirm_update",
+    #                         "title": "✅ Confirm"
+    #                     }
+    #                 },
+    #                 {
+    #                     "type": "reply",
+    #                     "reply": {
+    #                         "id": "cancel_update",
+    #                         "title": "❌ Cancel"
+    #                     }
+    #                 }
+    #             ]
+    #         }
+    #     })
+    # }
+
+    # auth = (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+
+    # response = requests.post(url, data=data, headers=headers, auth=auth)
+    # print(response.json())  # Debugging
+
+    """ Sends a message with confirmation buttons to Telegram. """
+    text = (f"📌 Status: {extracted_info['status']}\n"
+            f"📍 Location: {extracted_info['location']}\n"
+            f"👥 Names: {', '.join(extracted_info['names'])}\n"
+            f"📅 Dates: {extracted_info['date_text']}\n"
+            f"📄 Reason: {extracted_info['reason']}\n\n"
+            "Do you want to update this status?")
+
+    keyboard = [[
+        {'text': '✅ Confirm', 'callback_data': 'confirm_update'},
+        {'text': '❌ Cancel', 'callback_data': 'cancel_update'}
+    ]]
+
+    bot.send_message(chat_id, text, reply_markup={'inline_keyboard': keyboard}, parse_mode=ParseMode.MARKDOWN)
+
+def handle_interactive_response(chat_id, callback_data):
+    # Handles user responses to interactive buttons.
+    # response = MessagingResponse()
+
+    # if sender not in updates:
+    #     response.message("⚠ No pending update found.")
+    #     return str(response)
+
+    # if button_id == "confirm_update":
+    #     # Retrieve pending update and update Google Sheets
+    #     extracted_info = updates.pop(sender)
+    #     complete = update_sheet(
+    #         extracted_info["status"], extracted_info["location"], extracted_info["names"],
+    #         extracted_info["date_text"], extracted_info["reason"], extracted_info["sheets_to_update"]
+    #     )
+
+    #     if complete:
+    #         response.message("✅ Status update successful!")
+    #     else:
+    #         response.message("❌ Error updating the sheet. Please try again.")
+
+    # elif button_id == "cancel_update":
+    #     updates.pop(sender, None)
+    #     response.message("❌ Update cancelled.")
+
+    # return str(response)
+
+    if chat_id not in updates:
+        bot.send_message(chat_id, "⚠ No pending update found.")
+        return
+
+    if callback_data == "confirm_update":
+        extracted_info = updates.pop(chat_id)
+        complete = update_sheet(
+            extracted_info["status"], extracted_info["location"], extracted_info["names"],
+            extracted_info["date_text"], extracted_info["reason"], extracted_info["sheets_to_update"]
+        )
+
+        if complete:
+            bot.send_message(chat_id, "✅ Status update successful!")
+        else:
+            bot.send_message(chat_id, "❌ Error updating the sheet. Please try again.")
+    elif callback_data == "cancel_update":
+        updates.pop(chat_id, None)
+        bot.send_message(chat_id, "❌ Update cancelled.")
 
 if __name__ == "__main__":
     from waitress import serve  # More efficient than Flask's built-in server
