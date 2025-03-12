@@ -9,7 +9,7 @@ import tempfile
 import re
 import os
 
-from telegram import ParseMode
+# from telegram import ParseMode
 from telegram.ext import Application, CommandHandler, CallbackContext
 
 
