@@ -24,6 +24,8 @@ load_dotenv()
 
 # Telegram Bot Token
 TELEGRAM_TOKEN = os.getenv('Telegram_Token')
+if not TELEGRAM_TOKEN:
+    raise ValueError("Telegram Token is missing from the environment variables!")
 # bot = Bot(token=TELEGRAM_TOKEN)
 
 application = Application.builder().token(TELEGRAM_TOKEN).build()
