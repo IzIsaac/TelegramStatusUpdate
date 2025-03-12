@@ -1,5 +1,5 @@
 flask
-telegram
+python-telegram-bot==20.0
 gspread
 pandas
 google-auth
