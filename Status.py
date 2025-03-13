@@ -10,8 +10,12 @@ import re
 import os
 
 # from telegram import ParseMode
-from telegram.ext import Application, CommandHandler, CallbackContext
-
+from contextlib import asynccontextmanager
+from http import HTTPStatus
+from telegram import Update
+from telegram.ext import Application, CommandHandler, MessageHandler, filters
+from telegram.ext._contexttypes import ContextTypes
+from fastapi import FastAPI, Request, Response
 
 # Load environment variables from .env
 load_dotenv()
@@ -28,21 +32,73 @@ print("Telegram Token: ", os.getenv('Telegram_Token'))
 
 if not TELEGRAM_TOKEN:
     raise ValueError("Telegram Token is missing from the environment variables!")
-# bot = Bot(token=TELEGRAM_TOKEN)
 
-application = Application.builder().token(TELEGRAM_TOKEN).build()
+# application = Application.builder().token(TELEGRAM_TOKEN).build()
 
-# Example command handler, like /start
-async def start(update, context):
-    await update.message.reply_text('Hello! I\'m your bot!')
+# # Example command handler, like /start
+# async def start(update, context):
+#     await update.message.reply_text('Hello! I\'m your bot!')
 
-# Adding the handler to the application
-application.add_handler(CommandHandler("start", start))
+# # Adding the handler to the application
+# application.add_handler(CommandHandler("start", start))
 
-# Run the bot
-application.run_polling()
+# # Run the bot
+# application.run_polling()
 
 
+ptb = (
+    Application.builder()
+    .updater(None)
+    .token(TELEGRAM_TOKEN)  # replace <your-bot-token>
+    .read_timeout(7)
+    .get_updates_read_timeout(42)
+    .build()
+)
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    await ptb.bot.setWebhook("https://updatestatus-production.up.railway.app/webhook") # replace <your-webhook-url>
+    async with ptb:
+        await ptb.start()
+        yield
+        await ptb.stop()
+
+app = FastAPI(lifespan=lifespan)
+
+@app.post("/")
+async def process_update(request: Request):
+    req = await request.json()
+    update = Update.de_json(req, ptb.bot)
+    await ptb.process_update(update)
+    return Response(status_code=HTTPStatus.OK)
+
+# Message handler for processing status updates
+async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    message_text = update.message.text.strip()
+
+    # Regex to match the status format
+    status_pattern = r"Status:\s*(\w+)\nR/Name:\s*(.+)\nDates\s*:\s*([\d/]+)\nReason:\s*(.+)"
+    match = re.search(status_pattern, message_text, re.IGNORECASE)
+
+    if match:
+        status, name, dates, reason = match.groups()
+        response = (f"✅ Status Update Received!\n"
+                    f"📌 *Status:* {status}\n"
+                    f"👤 *Name:* {name}\n"
+                    f"📅 *Dates:* {dates}\n"
+                    f"📝 *Reason:* {reason}")
+        await update.message.reply_text(response, parse_mode="Markdown")
+    else:
+        await update.message.reply_text("⚠️ Invalid status format. Please use:\n"
+                                        "`Status: <status>\nR/Name: <name>\nDates: <date>\nReason: <reason>`", parse_mode="Markdown")
+
+
+# Start command handler
+async def start(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Bot is running! Send a status message.")
+# Add handlers
+ptb.add_handler(CommandHandler("start", start))
+ptb.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # Handles all text messages
 
 # # Step 1: Decode the base64 credentials
 # print(f"Env Variable Found: {os.getenv('Google_Sheets_Credentials') is not None}")
