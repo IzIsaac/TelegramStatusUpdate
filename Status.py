@@ -61,6 +61,12 @@ async def send_startup_message():
     chat_id = "6568116828"  # Can be your own chat ID or a group chat ID
     await ptb.bot.send_message(chat_id, "Startup complete!")
 
+# /Start command handler
+async def start(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Starting...")
+ptb.add_handler(CommandHandler("start", start))
+
+# /id Get chat id
 async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Reply with the user's chat ID"""
     chat_id = update.message.chat_id
@@ -105,12 +111,6 @@ async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⚠️ Invalid status format. Please use:\n"
                                         "`Status: <status>\nR/Name: <name>\nDates: <date>\nReason: <reason>`", parse_mode="Markdown")
 
-
-# Start command handler
-async def start(update: Update, _: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Starting...")
-# Add handlers
-ptb.add_handler(CommandHandler("start", start))
 ptb.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # Handles all text messages
 
 # # Step 1: Decode the base64 credentials
