@@ -55,10 +55,24 @@ ptb = (
     .build()
 )
 
+# Send message when bot starts
+# async def send_startup_message():
+#     # Replace with the chat ID where you want to send the message
+#     chat_id = "<your-chat-id>"  # Can be your own chat ID or a group chat ID
+#     await ptb.bot.send_message(chat_id, "Bot is running! Send a status message.")
+
+async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Reply with the user's chat ID"""
+    chat_id = update.message.chat_id
+    await update.message.reply_text(f"Your chat ID is: {chat_id}")
+
+ptb.add_handler(CommandHandler("id", get_chat_id))
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     await ptb.bot.setWebhook("https://updatestatus-production.up.railway.app/webhook") # replace <your-webhook-url>
     async with ptb:
+        # await send_startup_message()
         await ptb.start()
         yield
         await ptb.stop()
