@@ -56,10 +56,10 @@ ptb = (
 )
 
 # Send message when bot starts
-# async def send_startup_message():
-#     # Replace with the chat ID where you want to send the message
-#     chat_id = "<your-chat-id>"  # Can be your own chat ID or a group chat ID
-#     await ptb.bot.send_message(chat_id, "Bot is running! Send a status message.")
+async def send_startup_message():
+    # Replace with the chat ID where you want to send the message
+    chat_id = "6568116828"  # Can be your own chat ID or a group chat ID
+    await ptb.bot.send_message(chat_id, "Startup complete!")
 
 async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Reply with the user's chat ID"""
@@ -109,7 +109,7 @@ async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
 # Start command handler
 async def start(update: Update, _: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Bot is running! Send a status message.")
+    await update.message.reply_text("Starting...")
 # Add handlers
 ptb.add_handler(CommandHandler("start", start))
 ptb.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # Handles all text messages
