@@ -65,7 +65,7 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-@app.post("/")
+@app.post("/webhook")
 async def process_update(request: Request):
     req = await request.json()
     update = Update.de_json(req, ptb.bot)
