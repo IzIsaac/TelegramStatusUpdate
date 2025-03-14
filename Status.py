@@ -1,6 +1,11 @@
-# from twilio.twiml.messaging_response import MessagingResponse
+from telegram.ext import Application, CommandHandler, MessageHandler, filters
+from telegram.constants import ParseMode
+from contextlib import asynccontextmanager
+from http import HTTPStatus
+from telegram import Update
+from telegram.ext._contexttypes import ContextTypes
+from fastapi import FastAPI, Request, Response
 from google.oauth2.service_account import Credentials
-from flask import Flask, request
 from dotenv import load_dotenv
 import gspread
 import pandas as pd
@@ -8,14 +13,6 @@ import base64
 import tempfile
 import re
 import os
-
-from telegram.constants import ParseMode
-from contextlib import asynccontextmanager
-from http import HTTPStatus
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters
-from telegram.ext._contexttypes import ContextTypes
-from fastapi import FastAPI, Request, Response
 
 # Load environment variables from .env
 load_dotenv()
