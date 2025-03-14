@@ -9,7 +9,7 @@ import tempfile
 import re
 import os
 
-from telegram import ParseMode
+from telegram.constants import ParseMode  # ✅ Correct import
 from contextlib import asynccontextmanager
 from http import HTTPStatus
 from telegram import Update
