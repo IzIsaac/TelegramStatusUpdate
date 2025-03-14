@@ -238,7 +238,7 @@ def extract_message(message):
         line = line.strip()
         
         # If "R/Name" is found, start capturing names
-        match = re.match(r"R/Name:?\s*(.*)", line, re.IGNORECASE)
+        match = re.match(r"R/Names?\s*:?\s*(.*)", line, re.IGNORECASE)
         if match:
             name_section = True
             names_in_line = match.group(1).strip()
