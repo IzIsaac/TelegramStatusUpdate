@@ -9,7 +9,7 @@ import tempfile
 import re
 import os
 
-from telegram.constants import ParseMode  # ✅ Correct import
+from telegram.constants import ParseMode
 from contextlib import asynccontextmanager
 from http import HTTPStatus
 from telegram import Update
@@ -54,8 +54,7 @@ google_sheets_url = os.getenv("google_sheets_url")
 sheet = client.open_by_url(google_sheets_url)
 print("✅ Successfully connected to Google Sheets!")
 
-# Step 4: User Inputs
-# Building the bot
+# Step 4: Building the bot
 ptb = (
     Application.builder()
     .updater(None)
@@ -115,10 +114,19 @@ async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
     # Update Google Sheets
     complete = update_sheet(status, location, names, date_text, reason, sheets_to_update)
 
+    # Send multiple messages
+    response = (f"✅ Status Update Recieved\n"
+                    f"📌 Status: {status}\n"
+                    f"📍 Location: {location}\n"
+                    f"👥 Names: {', '.join(names) if names else 'None'}\n"
+                    f"📅 Dates: {date_text}\n"
+                    f"📄 Reason: {reason}\n")
+    await update.message.reply_text(response, parse_mode="Markdown")
+
     if complete:
-        update.message.reply_text("✅ All updates completed!")
+        await update.message.reply_text("✅ All updates completed!")      
     else:
-        update.message.reply_text("❌ Error: Check logs for issue...")
+        await update.message.reply_text("⚠️ Error: Check logs for issue...")
 
     # # Regex to match the status format
     # status_pattern = r"Status:\s*(\w+)\nR/Name:\s*(.+)\nDates\s*:\s*([\d/]+)\nReason:\s*(.+)"
@@ -332,7 +340,8 @@ def update_sheet(status, location, names, date_text, reason, sheets_to_update):
             remarks_col = headers.index("Remarks")
             location_col = headers.index("Location")
         except ValueError:
-            print(f"❌ Error: Required columns missing in {sheet_name} sheet.")
+            success = False
+            print(f"⚠️ Error: Required columns missing in {sheet_name} sheet.")
             continue
 
         # Update each person's record
@@ -356,10 +365,11 @@ def update_sheet(status, location, names, date_text, reason, sheets_to_update):
             for cell, value in updates:
                 worksheet.update(range_name=cell, values=value)
 
+            success = True
             print(f"✅ Successfully updated {name}'s record in {sheet_name} sheet (Row {row_index})")
 
     print("✅ All updates completed!")
-    return True
+    return success
 
 # # Step 8: Confirm status update
 # def send_confirmation_message(chat_id, extracted_info):
@@ -470,8 +480,3 @@ def update_sheet(status, location, names, date_text, reason, sheets_to_update):
 #     elif callback_data == "cancel_update":
 #         updates.pop(chat_id, None)
 #         bot.send_message(chat_id, "❌ Update cancelled.")
-
-# if __name__ == "__main__":
-#     from waitress import serve  # More efficient than Flask's built-in server
-#     port = int(os.getenv("PORT", 8080))
-#     serve(app, host="0.0.0.0", port=port)'
