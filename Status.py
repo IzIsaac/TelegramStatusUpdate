@@ -28,24 +28,13 @@ load_dotenv()
 
 # Telegram Bot Token
 TELEGRAM_TOKEN = os.getenv('Telegram_Token')
+CHAT_ID = os.getenv('Chat_ID')
 print("Telegram Token: ", os.getenv('Telegram_Token'))
 
 if not TELEGRAM_TOKEN:
     raise ValueError("Telegram Token is missing from the environment variables!")
 
-# application = Application.builder().token(TELEGRAM_TOKEN).build()
-
-# # Example command handler, like /start
-# async def start(update, context):
-#     await update.message.reply_text('Hello! I\'m your bot!')
-
-# # Adding the handler to the application
-# application.add_handler(CommandHandler("start", start))
-
-# # Run the bot
-# application.run_polling()
-
-
+# Building the bot
 ptb = (
     Application.builder()
     .updater(None)
@@ -58,7 +47,7 @@ ptb = (
 # Send message when bot starts
 async def send_startup_message():
     # Replace with the chat ID where you want to send the message
-    chat_id = "6568116828"  # Can be your own chat ID or a group chat ID
+    chat_id = CHAT_ID  # Can be your own chat ID or a group chat ID
     await ptb.bot.send_message(chat_id, "Startup complete!")
 
 # /Start command handler
@@ -93,11 +82,11 @@ async def process_update(request: Request):
 
 # Message handler for processing status updates
 async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
-    message_text = update.message.text.strip()
+    message = update.message.text.strip()
 
     # Regex to match the status format
     status_pattern = r"Status:\s*(\w+)\nR/Name:\s*(.+)\nDates\s*:\s*([\d/]+)\nReason:\s*(.+)"
-    match = re.search(status_pattern, message_text, re.IGNORECASE)
+    match = re.search(status_pattern, message, re.IGNORECASE)
 
     if match:
         status, name, dates, reason = match.groups()
