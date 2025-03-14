@@ -9,7 +9,7 @@ import tempfile
 import re
 import os
 
-# from telegram import ParseMode
+from telegram import ParseMode
 from contextlib import asynccontextmanager
 from http import HTTPStatus
 from telegram import Update
@@ -19,12 +19,6 @@ from fastapi import FastAPI, Request, Response
 
 # Load environment variables from .env
 load_dotenv()
-
-# Accessing the variables
-# TWILIO_ACCOUNT_SID = os.getenv("Twilio_Account_SID")
-# TWILIO_AUTH_TOKEN = os.getenv("Twilio_Auth_Token")
-# TWILIO_PHONE_NUMBER = os.getenv("Twilio_Phone_Number")
-# TWILIO_SERVICE_SID = os.getenv("Twilio_Service_SID")
 
 # Telegram Bot Token
 TELEGRAM_TOKEN = os.getenv('Telegram_Token')
@@ -91,6 +85,7 @@ ptb.add_handler(CommandHandler("id", get_chat_id))
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    await ptb.bot.deleteWebhook()  # Ensure webhook is reset
     await ptb.bot.setWebhook("https://updatestatus-production.up.railway.app/webhook") # replace <your-webhook-url>
     async with ptb:
         await send_startup_message()
@@ -110,22 +105,36 @@ async def process_update(request: Request):
 # Message handler for processing status updates
 async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
     message = update.message.text.strip()
+    sender = update.message.from_user.id
+ 
+    print(f"📩 New message from {sender}: \n{message}")  # Debugging
 
-    # Regex to match the status format
-    status_pattern = r"Status:\s*(\w+)\nR/Name:\s*(.+)\nDates\s*:\s*([\d/]+)\nReason:\s*(.+)"
-    match = re.search(status_pattern, message, re.IGNORECASE)
+    # Process the message and extract details
+    status, location, names, date_text, reason, sheets_to_update = extract_message(message)
 
-    if match:
-        status, name, dates, reason = match.groups()
-        response = (f"✅ Status Update Received!\n"
-                    f"📌 *Status:* {status}\n"
-                    f"👤 *Name:* {name}\n"
-                    f"📅 *Dates:* {dates}\n"
-                    f"📝 *Reason:* {reason}")
-        await update.message.reply_text(response, parse_mode="Markdown")
+    # Update Google Sheets
+    complete = update_sheet(status, location, names, date_text, reason, sheets_to_update)
+
+    if complete:
+        update.message.reply_text("✅ All updates completed!")
     else:
-        await update.message.reply_text("⚠️ Invalid status format. Please use:\n"
-                                        "`Status: <status>\nR/Name: <name>\nDates: <date>\nReason: <reason>`", parse_mode="Markdown")
+        update.message.reply_text("❌ Error: Check logs for issue...")
+
+    # # Regex to match the status format
+    # status_pattern = r"Status:\s*(\w+)\nR/Name:\s*(.+)\nDates\s*:\s*([\d/]+)\nReason:\s*(.+)"
+    # match = re.search(status_pattern, message, re.IGNORECASE)
+
+    # if match:
+    #     status, name, dates, reason = match.groups()
+    #     response = (f"✅ Status Update Received!\n"
+    #                 f"📌 *Status:* {status}\n"
+    #                 f"👤 *Name:* {name}\n"
+    #                 f"📅 *Dates:* {dates}\n"
+    #                 f"📝 *Reason:* {reason}")
+    #     await update.message.reply_text(response, parse_mode="Markdown")
+    # else:
+    #     await update.message.reply_text("⚠️ Invalid status format. Please use:\n"
+    #                                     "`Status: <status>\nR/Name: <name>\nDates: <date>\nReason: <reason>`", parse_mode="Markdown")
 
 ptb.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # Handles all text messages
 
@@ -191,166 +200,166 @@ ptb.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 #     # return str(response)
 #     return "OK", 200
 
-# # Step 5: Define Official Status Mapping
-# status_mapping = {
-#     "PRESENT": "PRESENT",
-#     "ATTACH IN": "ATTACH IN",
-#     "DUTY": "DUTY",
-#     "UDO": "DUTY",
-#     "CDOS": "DUTY",
-#     "GUARD": "DUTY",
-#     "WFH": "WFH",
-#     "OUTSTATION": "OUTSTATION",
-#     "BLOOD DONATION": "OUTSTATION",
-#     "OS": "OUTSTATION",
-#     "CSE": "CSE",
-#     "AO": "AO",
-#     "LEAVE": "LEAVE",
-#     "OFF": "OFF",
-#     "RSI/RSO": "RSI/RSO",
-#     "RSI": "RSI/RSO",
-#     "RSO": "RSI/RSO",
-#     "MC": "MC",
-#     "MA": "MA"
-# }
+# Step 5: Define Official Status Mapping
+status_mapping = {
+    "PRESENT": "PRESENT",
+    "ATTACH IN": "ATTACH IN",
+    "DUTY": "DUTY",
+    "UDO": "DUTY",
+    "CDOS": "DUTY",
+    "GUARD": "DUTY",
+    "WFH": "WFH",
+    "OUTSTATION": "OUTSTATION",
+    "BLOOD DONATION": "OUTSTATION",
+    "OS": "OUTSTATION",
+    "CSE": "CSE",
+    "AO": "AO",
+    "LEAVE": "LEAVE",
+    "OFF": "OFF",
+    "RSI/RSO": "RSI/RSO",
+    "RSI": "RSI/RSO",
+    "RSO": "RSI/RSO",
+    "MC": "MC",
+    "MA": "MA"
+}
 
-# # Step 6: Extract Fields
-# def extract_message(message):
-#     # Extract Status and Location (if in "Status:")
-#     status_match = re.search(r"Status:\s*([A-Z]+(?:\s+[A-Z]+)?)\s*(?:\s*@\s*(.+))?$", message, re.IGNORECASE | re.MULTILINE)
-#     raw_status = status_match.group(1).strip() if status_match else "Unknown"
-#     location = status_match.group(2).strip() if status_match and status_match.group(2) else ""
+# Step 6: Extract Fields
+def extract_message(message):
+    # Extract Status and Location (if in "Status:")
+    status_match = re.search(r"Status:\s*([A-Z]+(?:\s+[A-Z]+)?)\s*(?:\s*@\s*(.+))?$", message, re.IGNORECASE | re.MULTILINE)
+    raw_status = status_match.group(1).strip() if status_match else "Unknown"
+    location = status_match.group(2).strip() if status_match and status_match.group(2) else ""
 
-#     # Convert status to official version
-#     # status = status_mapping.get(raw_status.upper(), "Invalid")
+    # Convert status to official version
+    # status = status_mapping.get(raw_status.upper(), "Invalid")
 
-#     for keyword in status_mapping.keys():
-#         if keyword.upper() in raw_status.upper():  # Case-insensitive matching
-#             status = status_mapping[keyword]  # Return mapped status
-#             break
-#         else:
-#             status = "Invalid"
+    for keyword in status_mapping.keys():
+        if keyword.upper() in raw_status.upper():  # Case-insensitive matching
+            status = status_mapping[keyword]  # Return mapped status
+            break
+        else:
+            status = "Invalid"
 
-#     if status == "Invalid":
-#         print(f"❌ Error: '{raw_status}' is not a valid status.")
-#         return "❌ Invalid status detected.", 400
+    if status == "Invalid":
+        print(f"❌ Error: '{raw_status}' is not a valid status.")
+        return "❌ Invalid status detected.", 400
 
-#     # Extract Names (Handles "R/Name" with or without ":" and same-line names)
-#     name_lines = []
-#     name_section = False
+    # Extract Names (Handles "R/Name" with or without ":" and same-line names)
+    name_lines = []
+    name_section = False
 
-#     for line in message.split("\n"):
-#         line = line.strip()
+    for line in message.split("\n"):
+        line = line.strip()
         
-#         # If "R/Name" is found, start capturing names
-#         match = re.match(r"R/Name:?\s*(.*)", line, re.IGNORECASE)
-#         if match:
-#             name_section = True
-#             names_in_line = match.group(1).strip()
-#             if names_in_line:  # If names are on the same line as "R/Name"
-#                 name_lines.extend(names_in_line.split("\n"))  
-#             continue
+        # If "R/Name" is found, start capturing names
+        match = re.match(r"R/Name:?\s*(.*)", line, re.IGNORECASE)
+        if match:
+            name_section = True
+            names_in_line = match.group(1).strip()
+            if names_in_line:  # If names are on the same line as "R/Name"
+                name_lines.extend(names_in_line.split("\n"))  
+            continue
 
-#         # Stop capturing names if "Dates:" is found
-#         elif re.match(r"Dates?\s*:?", line, re.IGNORECASE):
-#             name_section = False
-#             break  
+        # Stop capturing names if "Dates:" is found
+        elif re.match(r"Dates?\s*:?", line, re.IGNORECASE):
+            name_section = False
+            break  
 
-#         # If inside the "R/Name" section, collect names
-#         elif name_section:
-#             name_lines.append(line)
+        # If inside the "R/Name" section, collect names
+        elif name_section:
+            name_lines.append(line)
 
-#     # Remove the first word (rank) from each name
-#     names = [" ".join(name.split()[1:]) for name in name_lines if len(name.split()) > 1]
+    # Remove the first word (rank) from each name
+    names = [" ".join(name.split()[1:]) for name in name_lines if len(name.split()) > 1]
 
-#     # Extract Date and determine which sheets to update
-#     # date_match = re.search(r"Dates?\s*:?\s*(\d{2}/\d{2}/\d{2,4})(?:\s*\(?(AM|PM)?\)?)?", message, re.IGNORECASE)
-#     # date_text = date_match.group(1) if date_match else ""
-#     # period = date_match.group(2) if date_match and date_match.group(2) else ""
+    # Extract Date and determine which sheets to update
+    # date_match = re.search(r"Dates?\s*:?\s*(\d{2}/\d{2}/\d{2,4})(?:\s*\(?(AM|PM)?\)?)?", message, re.IGNORECASE)
+    # date_text = date_match.group(1) if date_match else ""
+    # period = date_match.group(2) if date_match and date_match.group(2) else ""
 
-#     date_match = re.search(r"Dates?\s*:?\s*(.+)", message, re.IGNORECASE)
-#     date_text = date_match.group(1).strip() if date_match else ""
-#     period = ""
-#     if "(AM)" in date_text.upper():
-#         period = "AM"
-#     elif "(PM)" in date_text.upper():
-#         period = "PM"
+    date_match = re.search(r"Dates?\s*:?\s*(.+)", message, re.IGNORECASE)
+    date_text = date_match.group(1).strip() if date_match else ""
+    period = ""
+    if "(AM)" in date_text.upper():
+        period = "AM"
+    elif "(PM)" in date_text.upper():
+        period = "PM"
 
 
-#     # Determine sheets to update
-#     sheets_to_update = []
-#     if period == "AM":
-#         sheets_to_update.append("AM")
-#     elif period == "PM":
-#         sheets_to_update.append("PM")
-#     else:
-#         sheets_to_update.extend(["AM", "PM"])  # If no period specified, update both
+    # Determine sheets to update
+    sheets_to_update = []
+    if period == "AM":
+        sheets_to_update.append("AM")
+    elif period == "PM":
+        sheets_to_update.append("PM")
+    else:
+        sheets_to_update.extend(["AM", "PM"])  # If no period specified, update both
 
-#     # Night sheet updates only for specific statuses
-#     if status in ["DUTY", "CSE", "AO", "LEAVE", "OFF", "MC"]:
-#         sheets_to_update.append("NIGHT")
+    # Night sheet updates only for specific statuses
+    if status in ["DUTY", "CSE", "AO", "LEAVE", "OFF", "MC"]:
+        sheets_to_update.append("NIGHT")
 
-#     # Extract Reason (if exists)
-#     reason_match = re.search(r"Reason:\s*(.+)", message, re.IGNORECASE)
-#     reason = reason_match.group(1).strip() if reason_match else ""
+    # Extract Reason (if exists)
+    reason_match = re.search(r"Reason:\s*(.+)", message, re.IGNORECASE)
+    reason = reason_match.group(1).strip() if reason_match else ""
 
-#     # Extract Location (if provided separately)
-#     location_match = re.search(r"Location:\s*(.+)", message, re.IGNORECASE)
-#     if location_match:
-#         location = location_match.group(1).strip()
+    # Extract Location (if provided separately)
+    location_match = re.search(r"Location:\s*(.+)", message, re.IGNORECASE)
+    if location_match:
+        location = location_match.group(1).strip()
 
-#     # Output extracted values
-#     print("Extracted Status:", status)
-#     print("Extracted Location:", location)
-#     print("Extracted Names:", names)
-#     print("Extracted Date:", date_text)
-#     print("Extracted Reason:", reason)
-#     print("Sheets to update:", sheets_to_update)
-#     return status, location, names, date_text, reason, sheets_to_update
+    # Output extracted values
+    print("Extracted Status:", status)
+    print("Extracted Location:", location)
+    print("Extracted Names:", names)
+    print("Extracted Date:", date_text)
+    print("Extracted Reason:", reason)
+    print("Sheets to update:", sheets_to_update)
+    return status, location, names, date_text, reason, sheets_to_update
 
-# # Step 7: Update Google Sheets for each sheet
-# def update_sheet(status, location, names, date_text, reason, sheets_to_update):
-#     for sheet_name in sheets_to_update:
-#         worksheet = sheet.worksheet(sheet_name)
-#         data = worksheet.get_all_values()
-#         headers = data[1]  # Use second row as headers
-#         df = pd.DataFrame(data[2:], columns=headers)  # Data starts from the third row
+# Step 7: Update Google Sheets for each sheet
+def update_sheet(status, location, names, date_text, reason, sheets_to_update):
+    for sheet_name in sheets_to_update:
+        worksheet = sheet.worksheet(sheet_name)
+        data = worksheet.get_all_values()
+        headers = data[1]  # Use second row as headers
+        df = pd.DataFrame(data[2:], columns=headers)  # Data starts from the third row
 
-#         # Column indices
-#         try:
-#             status_col = headers.index("Status")
-#             date_col = headers.index("Date")
-#             remarks_col = headers.index("Remarks")
-#             location_col = headers.index("Location")
-#         except ValueError:
-#             print(f"❌ Error: Required columns missing in {sheet_name} sheet.")
-#             continue
+        # Column indices
+        try:
+            status_col = headers.index("Status")
+            date_col = headers.index("Date")
+            remarks_col = headers.index("Remarks")
+            location_col = headers.index("Location")
+        except ValueError:
+            print(f"❌ Error: Required columns missing in {sheet_name} sheet.")
+            continue
 
-#         # Update each person's record
-#         for name in names:
-#             matching_rows = df[df["Name"].str.contains(name, case=False, na=False)].index.tolist()
+        # Update each person's record
+        for name in names:
+            matching_rows = df[df["Name"].str.contains(name, case=False, na=False)].index.tolist()
 
-#             if not matching_rows:
-#                 print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'")
-#                 continue
+            if not matching_rows:
+                print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'")
+                continue
 
-#             row_index = matching_rows[0] + 3  # Adjusting for header rows
+            row_index = matching_rows[0] + 3  # Adjusting for header rows
 
-#             # Update the Google Sheet
-#             updates = [
-#                 (f"{chr(65 + status_col)}{row_index}", [[status]]),
-#                 (f"{chr(65 + date_col)}{row_index}", [[date_text]]),
-#                 (f"{chr(65 + remarks_col)}{row_index}", [[reason]]),
-#                 (f"{chr(65 + location_col)}{row_index}", [[location]])
-#             ]
+            # Update the Google Sheet
+            updates = [
+                (f"{chr(65 + status_col)}{row_index}", [[status]]),
+                (f"{chr(65 + date_col)}{row_index}", [[date_text]]),
+                (f"{chr(65 + remarks_col)}{row_index}", [[reason]]),
+                (f"{chr(65 + location_col)}{row_index}", [[location]])
+            ]
 
-#             for cell, value in updates:
-#                 worksheet.update(range_name=cell, values=value)
+            for cell, value in updates:
+                worksheet.update(range_name=cell, values=value)
 
-#             print(f"✅ Successfully updated {name}'s record in {sheet_name} sheet (Row {row_index})")
+            print(f"✅ Successfully updated {name}'s record in {sheet_name} sheet (Row {row_index})")
 
-#     print("✅ All updates completed!")
-#     return True
+    print("✅ All updates completed!")
+    return True
 
 # # Step 8: Confirm status update
 # def send_confirmation_message(chat_id, extracted_info):
