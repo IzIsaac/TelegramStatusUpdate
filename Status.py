@@ -128,26 +128,9 @@ async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("⚠️ Error: Check logs for issue...")
 
-    # # Regex to match the status format
-    # status_pattern = r"Status:\s*(\w+)\nR/Name:\s*(.+)\nDates\s*:\s*([\d/]+)\nReason:\s*(.+)"
-    # match = re.search(status_pattern, message, re.IGNORECASE)
-
-    # if match:
-    #     status, name, dates, reason = match.groups()
-    #     response = (f"✅ Status Update Received!\n"
-    #                 f"📌 *Status:* {status}\n"
-    #                 f"👤 *Name:* {name}\n"
-    #                 f"📅 *Dates:* {dates}\n"
-    #                 f"📝 *Reason:* {reason}")
-    #     await update.message.reply_text(response, parse_mode="Markdown")
-    # else:
-    #     await update.message.reply_text("⚠️ Invalid status format. Please use:\n"
-    #                                     "`Status: <status>\nR/Name: <name>\nDates: <date>\nReason: <reason>`", parse_mode="Markdown")
-
 ptb.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # Handles all text messages
 
 # app = Flask(__name__)
-
 # # Store pending updates (key: sender number, value: extracted info)
 # updates = {}
 
@@ -168,7 +151,6 @@ ptb.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 #     print(f"📩 New message from {sender}: \n{text}")  # Debugging
 
-
 #     # # Check if user is replying with a button
 #     # interactive_response = request.values.get("InteractiveResponseId")
 
@@ -177,7 +159,6 @@ ptb.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 #     # Process the message and extract details
 #     status, location, names, date_text, reason, sheets_to_update = extract_message(text)
-
 
 #     # Store the extracted info in dictionary updates
 #     updates[sender] = {
@@ -349,6 +330,7 @@ def update_sheet(status, location, names, date_text, reason, sheets_to_update):
             matching_rows = df[df["Name"].str.contains(name, case=False, na=False)].index.tolist()
 
             if not matching_rows:
+                success = False
                 print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'")
                 continue
 
