@@ -34,6 +34,33 @@ print("Telegram Token: ", os.getenv('Telegram_Token'))
 if not TELEGRAM_TOKEN:
     raise ValueError("Telegram Token is missing from the environment variables!")
 
+# Step 1: Decode the base64 credentials
+print(f"Env Variable Found: {os.getenv('Google_Sheets_Credentials') is not None}")
+credentials_data = os.getenv('Google_Sheets_Credentials')
+if credentials_data:
+    credentials_json = base64.b64decode(credentials_data)
+
+    # Create a temporary file to store the credentials
+    with tempfile.NamedTemporaryFile(delete=False, mode='wb') as temp_file:
+        temp_file.write(credentials_json)
+        temp_file_path = temp_file.name
+
+    # Step 2: Authenticate & Connect to Google Sheets
+    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+    credentials = Credentials.from_service_account_file(temp_file_path, scopes=scope)
+    client = gspread.authorize(credentials)
+    
+    # Clean up temporary file (optional)
+    os.remove(temp_file_path)
+else:
+    print("❌ Error: Google Sheets credentials not found in environment variables.")
+
+# Step 3: Open Google Sheet
+google_sheets_url = os.getenv("google_sheets_url")
+sheet = client.open_by_url(google_sheets_url)
+print("✅ Successfully connected to Google Sheets!")
+
+# Step 4: User Inputs
 # Building the bot
 ptb = (
     Application.builder()
@@ -102,33 +129,6 @@ async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
 ptb.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # Handles all text messages
 
-# # Step 1: Decode the base64 credentials
-# print(f"Env Variable Found: {os.getenv('Google_Sheets_Credentials') is not None}")
-# credentials_data = os.getenv('Google_Sheets_Credentials')
-# if credentials_data:
-#     credentials_json = base64.b64decode(credentials_data)
-
-#     # Create a temporary file to store the credentials
-#     with tempfile.NamedTemporaryFile(delete=False, mode='wb') as temp_file:
-#         temp_file.write(credentials_json)
-#         temp_file_path = temp_file.name
-
-#     # Step 2: Authenticate & Connect to Google Sheets
-#     scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-#     credentials = Credentials.from_service_account_file(temp_file_path, scopes=scope)
-#     client = gspread.authorize(credentials)
-    
-#     # Clean up temporary file (optional)
-#     os.remove(temp_file_path)
-# else:
-#     print("❌ Error: Google Sheets credentials not found in environment variables.")
-
-# # Step 3: Open Google Sheet
-# google_sheets_url = os.getenv("google_sheets_url")
-# sheet = client.open_by_url(google_sheets_url)
-# print("✅ Successfully connected to Google Sheets!")
-
-# # Step 4: User Inputs
 # app = Flask(__name__)
 
 # # Store pending updates (key: sender number, value: extracted info)
