@@ -9,3 +9,5 @@ python-dotenv
 waitress
 fastapi
 uvicorn
+
+keyboard
