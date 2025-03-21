@@ -10,6 +10,5 @@ waitress
 fastapi
 uvicorn
 
-keyboard
 apscheduler
 pyzoneinfo
