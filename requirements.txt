@@ -11,4 +11,4 @@ fastapi
 uvicorn
 
 keyboard
-apsheduler
+apscheduler
