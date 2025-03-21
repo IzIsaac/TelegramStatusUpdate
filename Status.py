@@ -138,11 +138,9 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     query = update.callback_query
     data =  query.data
     print("Waiting for response...")
-    print(f"Received callback data: {query.data}")
 
     if data == "cancel":
         await query.answer("❌ Status update cancelled.", show_alert=True)
-        print("Query answered.")
         return
     
     # Process confirmation
@@ -152,12 +150,11 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     complete = update_sheet(status, location, names, date_text, reason, sheets_to_update) 
 
-    await query.answer("✅ All updates completed!", show_alert=True)
-    # if complete:
-    #     await query.answer("✅ All updates completed!", show_alert=True)      
-    # else:
-    #     await query.answer("⚠️ Error: Check logs for issue...", show_alert=True)
-    print("Query answered.")
+    # await query.answer("✅ All updates completed!", show_alert=True)
+    if complete:
+        await query.answer("✅ All updates completed!", show_alert=True)      
+    else:
+        await query.answer("⚠️ Error: Check logs for issue...", show_alert=True)
 ptb.add_handler(CallbackQueryHandler(handle_confirmation))
 
 # Step 5: Define Official Status Mapping
