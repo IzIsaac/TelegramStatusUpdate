@@ -137,10 +137,12 @@ ptb.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     data =  query.data
-    print("Waiting for response")
+    print("Waiting for response...")
+    print(f"Received callback data: {query.data}")
 
     if data == "cancel":
-        await query.answer("❌ Status update cancelled.")
+        await query.answer("❌ Status update cancelled.", show_alert=True)
+        print("Query answered.")
         return
     
     # Process confirmation
@@ -152,9 +154,10 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     # await query.answer("✅ All updates completed!")
     if complete:
-        await update.message.reply_text("✅ All updates completed!")      
+        await query.answer("✅ All updates completed!", show_alert=True)      
     else:
-        await update.message.reply_text("⚠️ Error: Check logs for issue...")
+        await query.answer("⚠️ Error: Check logs for issue...", show_alert=True)
+    print("Query answered.")
 ptb.add_handler(CallbackQueryHandler(handle_confirmation))
 
 # Step 5: Define Official Status Mapping
