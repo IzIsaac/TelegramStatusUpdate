@@ -136,7 +136,7 @@ ptb.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    data =  query.answer()
+    data =  query.data
 
     if data == "cancel":
         await query.answer("❌ Status update cancelled.")
