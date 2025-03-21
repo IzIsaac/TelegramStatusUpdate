@@ -136,10 +136,10 @@ ptb.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
+    data =  query.answer()
 
-    if query.data() == "cancel":
-        await query.edit_message_text("❌ Status update cancelled.")
+    if data == "cancel":
+        await query.answer("❌ Status update cancelled.")
         return
     
     # Process confirmation
@@ -149,6 +149,7 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     complete = update_sheet(status, location, names, date_text, reason, sheets_to_update) 
 
+    await query.answer("✅ All updates completed!")
     # if complete:
     #     await update.message.reply_text("✅ All updates completed!")      
     # else:
