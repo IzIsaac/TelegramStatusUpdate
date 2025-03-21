@@ -15,9 +15,6 @@ import tempfile
 import re
 import os
 
-from matplotlib.offsetbox import DrawingArea
-from pytz import timezone
-from regex import D, P
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -125,9 +122,6 @@ async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # # Update Google Sheets
-    # complete = update_sheet(status, location, names, date_text, reason, sheets_to_update)
-
     # Send multiple messages
     response = (f"✅ Status Update Recieved\n"
                     f"📌 Status: {status}\n"
@@ -136,11 +130,6 @@ async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
                     f"📅 Dates: {date_text}\n"
                     f"📄 Reason: {reason}\n")
     await update.message.reply_text(response, reply_markup=reply_markup, parse_mode="Markdown")
-
-    # if complete:
-    #     await update.message.reply_text("✅ All updates completed!")      
-    # else:
-    #     await update.message.reply_text("⚠️ Error: Check logs for issue...")
 
 ptb.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # Handles all text messages
 
@@ -157,72 +146,13 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     names = names.split(",") if names else []
     sheets_to_update = sheets_to_update.split(",") if sheets_to_update else []
 
-    complete = await update_sheet(status, location, names, date_text, reason, sheets_to_update) 
+    complete = update_sheet(status, location, names, date_text, reason, sheets_to_update) 
 
     if complete:
         await update.message.reply_text("✅ All updates completed!")      
     else:
         await update.message.reply_text("⚠️ Error: Check logs for issue...")
 ptb.add_handler(CallbackQueryHandler(handle_confirmation))
-
-# app = Flask(__name__)
-# # Store pending updates (key: sender number, value: extracted info)
-# updates = {}
-
-# # Route to check if the server is running
-# @app.route("/", methods=["GET"])
-# def home():
-#     return "Flask server is running!", 200
-
-# # Route to handle incoming webhook messages from Telegram
-# @app.route("/webhook", methods=["POST"])
-# def webhook():
-#     # Webhook to receive messages from Telegram.
-#     # message = request.values.get("Body", "").strip()
-#     # sender = request.values.get("From", "")
-#     message = request.json
-#     sender = message['message']['from']['id']
-#     text = message['message']['text'].strip()
-
-#     print(f"📩 New message from {sender}: \n{text}")  # Debugging
-
-#     # # Check if user is replying with a button
-#     # interactive_response = request.values.get("InteractiveResponseId")
-
-#     # if interactive_response:
-#     #     return handle_interactive_response(sender, interactive_response)
-
-#     # Process the message and extract details
-#     status, location, names, date_text, reason, sheets_to_update = extract_message(text)
-
-#     # Store the extracted info in dictionary updates
-#     updates[sender] = {
-#         "status": status, "location": location, "names": names,
-#         "date_text": date_text, "reason": reason, "sheets_to_update": sheets_to_update
-#     }
-
-#     # Send quick reply buttons to confirm update
-#     send_confirmation_message(sender, updates[sender])
-
-#     # # Send multiple messages
-#     # response = MessagingResponse()
-#     # response.message(f"✅ Received your message: {message}\n"
-#     #              f"📌 Status: {status}\n"
-#     #              f"📍 Location: {location}\n"
-#     #              f"👥 Names: {', '.join(names) if names else 'None'}\n"
-#     #              f"📅 Dates: {date_text}\n"
-#     #              f"📄 Reason: {reason}")
-
-#     # # Update Google Sheets
-#     # complete = update_sheet(status, location, names, date_text, reason, sheets_to_update)
-
-#     # if complete:
-#     #     response.message("✅ All updates completed!")
-#     # else:
-#     #     response.message("⚠️ Error: Check logs for issue...")
-
-#     # return str(response)
-#     return "OK", 200
 
 # Step 5: Define Official Status Mapping
 status_mapping = {
@@ -255,8 +185,6 @@ def extract_message(message):
     location = status_match.group(2).strip() if status_match and status_match.group(2) else ""
 
     # Convert status to official version
-    # status = status_mapping.get(raw_status.upper(), "Invalid")
-
     for keyword in status_mapping.keys():
         if keyword.upper() in raw_status.upper():  # Case-insensitive matching
             status = status_mapping[keyword]  # Return mapped status
@@ -402,7 +330,7 @@ def update_sheet(status, location, names, date_text, reason, sheets_to_update):
     print("✅ All updates completed!")
     return success
 
-# # Step 8: Confirm status update
+# Step 8: Confirm status update
 # Function to check and update statuses
 async def check_and_update_status():
     sheets = ["AM", "PM", "NIGHT"]
@@ -474,12 +402,13 @@ async def check_and_update_status():
         # Update each sheet in batches
         # print(names, len(names))
         if names:
-            await update_sheet(status, "", names, "", "", [sheet_name])
+            update_sheet(status, "", names, "", "", [sheet_name])
     if stay_in_updates:
-        await update_sheet("P - STAY IN SGC 377", "", stay_in_updates, "", "", ["NIGHT"])
+        update_sheet("P - STAY IN SGC 377", "", stay_in_updates, "", "", ["NIGHT"])
 
     print(f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time}")
 
+# Step 9: Run the checks everyday
 # Function to start the scheduler
 scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust timezone
 async def start_scheduler():
@@ -504,3 +433,4 @@ async def main():
 # Run the main function
 if __name__ == "__main__":
     asyncio.run(main())  # This ensures the event loop is started and executed
+
