@@ -11,4 +11,3 @@ fastapi
 uvicorn
 
 apscheduler
-pyzoneinfo
