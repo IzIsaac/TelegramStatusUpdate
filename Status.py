@@ -152,11 +152,11 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     complete = update_sheet(status, location, names, date_text, reason, sheets_to_update) 
 
-    # await query.answer("✅ All updates completed!")
-    if complete:
-        await query.answer("✅ All updates completed!", show_alert=True)      
-    else:
-        await query.answer("⚠️ Error: Check logs for issue...", show_alert=True)
+    await query.answer("✅ All updates completed!", show_alert=True)
+    # if complete:
+    #     await query.answer("✅ All updates completed!", show_alert=True)      
+    # else:
+    #     await query.answer("⚠️ Error: Check logs for issue...", show_alert=True)
     print("Query answered.")
 ptb.add_handler(CallbackQueryHandler(handle_confirmation))
 
