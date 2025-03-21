@@ -25,7 +25,7 @@ load_dotenv()
 # Telegram Bot Token
 TELEGRAM_TOKEN = os.getenv('Telegram_Token')
 CHAT_ID = os.getenv('Chat_ID')
-print("Telegram Token: ", os.getenv('Telegram_Token'))
+# print("Telegram Token: ", os.getenv('Telegram_Token'))
 
 if not TELEGRAM_TOKEN:
     raise ValueError("Telegram Token is missing from the environment variables!")
@@ -114,9 +114,10 @@ async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
     status, location, names, date_text, reason, sheets_to_update = extract_message(message)
 
     # Confirmation button
+    callback_data = f"confirm|{status[:10]}|{location[:10]}|{','.join(names[:3])}|{date_text[:10]}|{reason[:10]}|{','.join(sheets_to_update[:3])}"
     keyboard = [
         [
-            InlineKeyboardButton("✅ Confirm", callback_data=f"confirm|{status}|{location}|{','.join(names)}|{date_text}|{reason}|{','.join(sheets_to_update)}"),
+            InlineKeyboardButton("✅ Confirm", callback_data=callback_data),
             InlineKeyboardButton("❌ Cancel", callback_data="cancel")
         ]
     ]
