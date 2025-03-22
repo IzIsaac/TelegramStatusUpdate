@@ -145,10 +145,9 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     await query.edit_message_reply_markup(reply_markup=None)
 
     if data == "cancel":
-        await query.answer("❌ Status update cancelled.", show_alert=True)
+        await query.message.reply_text("❌ Status update cancelled.")
         return
-
-    await query.answer("✅ Confirmed! Processing the update.", show_alert=True)
+    await query.message.reply_text("✅ Confirmed! Status updated.")
 
     # Get data and update sheet
     status, location, names, date_text, reason, sheets_to_update = context.user_data.pop('status_data', (None,)*6)
