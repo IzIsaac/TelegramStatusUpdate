@@ -169,9 +169,9 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     # Update excel sheet
     complete = update_sheet(status, location, names, date_text, reason, sheets_to_update)
     if complete:
-        await query.message.edit_text("✅ All updates completed!")
+        await query.message.reply_text.edit_text("✅ All updates completed!")
     else:
-        await query.message.edit_text("⚠️ Error: Check logs for issue...")
+        await query.message.reply_text.edit_text("⚠️ Error: Check logs for issue...")
 ptb.add_handler(CallbackQueryHandler(handle_confirmation))
 
 # Step 5: Define Official Status Mapping
