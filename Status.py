@@ -433,7 +433,7 @@ async def check_and_update_status():
         update_sheet("P - STAY IN SGC 377", "", stay_in_names, "", "", ["NIGHT"])
     
     print(f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time}") # Debugging
-    message += f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time}"
+    message += f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time.strftime("%d/%m/%y")}"
     return message
 
 # Step 9: Run the checks everyday
