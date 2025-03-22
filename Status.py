@@ -439,14 +439,13 @@ async def start_scheduler():
     # Ensure job is added before accessing it
     await asyncio.sleep(1)  # Add a small delay to ensure job registration
     
-    # if not scheduler.get_jobs():
-    #     print("⚠️ No jobs scheduled.")
-    #     await send_telegram_message("⚠️ Scheduler started, but no jobs are scheduled.")
-    #     return
+    if not scheduler.get_jobs():
+        print("⚠️ No jobs scheduled.")
+        await send_telegram_message("⚠️ Scheduler started, but no jobs are scheduled.")
+        return
     
     # Send the next scheduled time to the Telegram bot
     next_run_time = job.next_run_time
-    # next_run_time = scheduler.get_jobs()[0].next_run_time
     next_run_message = f"📅 Next status check will run at: {next_run_time.strftime('%Y-%m-%d %H:%M:%S')}"
     print(next_run_message) # Debugging
     await send_telegram_message(next_run_message)
