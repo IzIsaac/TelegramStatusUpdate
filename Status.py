@@ -393,11 +393,11 @@ async def check_and_update_status():
             continue
 
         for i, row in df.iloc[first_ae_index:].iterrows():
-            platoon, name, date_range = row["Platoon"], row["Name"], row["Date"].strip()
+            platoon, name, date_range, current_status = row["Platoon"], row["Name"], row["Date"].strip(), row["Status"]
             if platoon != "AE": # Stops when no longer AE ppl
                 break
             elif not date_range: # Skips ppl with no date
-                if sheet_name == "NIGHT" and name in stay_in_ppl and weekday == 6:
+                if name in stay_in_ppl and weekday == 6 and current_status == "P - STAY OUT":
                     stay_in_names.append(name)
                 continue
             # print(f"📌 {sheet_name} | Row {i+3} | Status: {row['Status']} | Dates: {row['Date']}")
@@ -414,6 +414,7 @@ async def check_and_update_status():
                     print(f"🚨 Expired status: {name}")
                     if name in stay_in_ppl:
                         stay_in_names.append(name)
+         
                     else:
                         names.append(name)
             except ValueError: # Skip invalid dates
