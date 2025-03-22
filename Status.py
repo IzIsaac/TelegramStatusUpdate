@@ -433,11 +433,20 @@ async def check_and_update_status():
 scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust timezone
 async def start_scheduler():
     print("Starting scheduler...")
-    scheduler.add_job(lambda: asyncio.create_task(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
+    job = scheduler.add_job(lambda: asyncio.create_task(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
     # scheduler.add_job(lambda: asyncio.run(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
 
+    # Ensure job is added before accessing it
+    await asyncio.sleep(1)  # Add a small delay to ensure job registration
+    
+    # if not scheduler.get_jobs():
+    #     print("⚠️ No jobs scheduled.")
+    #     await send_telegram_message("⚠️ Scheduler started, but no jobs are scheduled.")
+    #     return
+    
     # Send the next scheduled time to the Telegram bot
-    next_run_time = scheduler.get_jobs()[0].next_run_time
+    next_run_time = job.next_run_time
+    # next_run_time = scheduler.get_jobs()[0].next_run_time
     next_run_message = f"📅 Next status check will run at: {next_run_time.strftime('%Y-%m-%d %H:%M:%S')}"
     print(next_run_message) # Debugging
     await send_telegram_message(next_run_message)
