@@ -458,7 +458,7 @@ async def start_scheduler():
     print("Scheduler is running. Press Ctrl+C to exit.")
     try:
         while True:
-            await asyncio.sleep(3600)
+            await asyncio.sleep(1)
     except KeyboardInterrupt:
         print("Shutting down scheduler.")
         scheduler.shutdown()
