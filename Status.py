@@ -72,7 +72,8 @@ async def send_startup_message():
     # Replace with the chat ID where you want to send the message
     chat_id = CHAT_ID  # Can be your own chat ID or a group chat ID
     await ptb.bot.send_message(chat_id, "Startup complete!")
-    await start_scheduler()
+    asyncio.create_task(start_scheduler())
+    print("✅ Scheduler started")
 
 # /Start command handler
 async def start(update: Update, _: ContextTypes.DEFAULT_TYPE):
@@ -455,17 +456,21 @@ async def start_scheduler():
     # await send_telegram_message(next_run_message)
 
     # scheduler.start()
-    print("Scheduler is running. Press Ctrl+C to exit.")
-    try:
-        while True:
-            await asyncio.sleep(1)
-    except KeyboardInterrupt:
-        print("Shutting down scheduler.")
-        scheduler.shutdown()
+    # print("Scheduler is running. Press Ctrl+C to exit.")
+    # try:
+    #     while True:
+    #         await asyncio.sleep(1)
+    # except KeyboardInterrupt:
+    #     print("Shutting down scheduler.")
+    #     scheduler.shutdown()
 
 # # Call the scheduler when the app starts
 # async def main():
-#     await start_scheduler()
+#     # Run both the bot and the scheduler concurrently
+#     await asyncio.gather(
+#         application.run_polling(),
+#         start_scheduler()
+#     )
 
 # # Run the main function
 # if __name__ == "__main__":
