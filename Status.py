@@ -104,7 +104,7 @@ async def process_update(request: Request):
     return Response(status_code=HTTPStatus.OK)
 
 # Message handler for processing status updates
-async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.message.text.strip()
     sender = update.message.from_user.id
  
@@ -114,10 +114,9 @@ async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
     status, location, names, date_text, reason, sheets_to_update = extract_message(message)
 
     # Confirmation button
-    callback_data = f"confirm|{status[:10]}|{location[:10]}|{','.join(names[:3])}|{date_text[:10]}|{reason[:10]}|{','.join(sheets_to_update[:3])}"
     keyboard = [
         [
-            InlineKeyboardButton("✅ Confirm", callback_data=callback_data),
+            InlineKeyboardButton("✅ Confirm", callback_data="confirm"),
             InlineKeyboardButton("❌ Cancel", callback_data="cancel")
         ]
     ]
@@ -130,7 +129,10 @@ async def handle_message(update: Update, _: ContextTypes.DEFAULT_TYPE):
                     f"👥 Names: {', '.join(names) if names else 'None'}\n"
                     f"📅 Dates: {date_text}\n"
                     f"📄 Reason: {reason}\n")
-    await update.message.reply_text(response, reply_markup=reply_markup, parse_mode="Markdown")
+    await update.message.reply_text(response, reply_markup=reply_markup, parse_mode="Markdown"), 
+
+    # Wait for user to confirm update
+    context.user_data["status_data"] = (status, location, names, date_text, reason, sheets_to_update)
 
 ptb.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # Handles all text messages
 
@@ -139,23 +141,28 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     data =  query.data
     print("Waiting for response...")
 
+    # Remove the buttons
+    await query.edit_message_reply_markup(reply_markup=None)
+
     if data == "cancel":
         await query.answer("❌ Status update cancelled.", show_alert=True)
         return
+
+    await query.answer("✅ Confirmed! Processing the update.", show_alert=True)
+
+    # Get data and update sheet
+    status, location, names, date_text, reason, sheets_to_update = context.user_data.pop('status_data', (None,)*6)
+
+    if not status:
+        print("Error: No data found in context.")
+        return
     
-    # Process confirmation
-    _, status, location, names, date_text, reason, sheets_to_update = query.data.split("|")
-    names = names.split(",") if names else []
-    sheets_to_update = sheets_to_update.split(",") if sheets_to_update else []
-
-    complete = update_sheet(status, location, names, date_text, reason, sheets_to_update) 
-
-    # await query.answer("✅ All updates completed!", show_alert=True)
+    # Update excel sheet
+    complete = update_sheet(status, location, names, date_text, reason, sheets_to_update)
     if complete:
-        await query.answer("✅ All updates completed!", show_alert=True)
-        await query.edit_message_text("✅ All updates completed!")
+        print("✅ All updates completed!")
     else:
-        await query.answer("⚠️ Error: Check logs for issue...", show_alert=True)
+        print("⚠️ Error: Check logs for issue...")
 ptb.add_handler(CallbackQueryHandler(handle_confirmation))
 
 # Step 5: Define Official Status Mapping
