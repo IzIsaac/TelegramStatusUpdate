@@ -1,3 +1,4 @@
+from email import message
 import keyboard
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 from telegram.constants import ParseMode
@@ -79,10 +80,20 @@ ptb.add_handler(CommandHandler("start", start))
 
 # /id Get chat id
 async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Reply with the user's chat ID"""
+    # Reply with the user's chat ID
     chat_id = update.message.chat_id
     await update.message.reply_text(f"Your chat ID is: {chat_id}")
 ptb.add_handler(CommandHandler("id", get_chat_id))
+
+# /check Manually run status check
+async def check_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    message = await check_and_update_status()
+    await update.message.reply_text(message)
+ptb.add_handler(CommandHandler("check", check_status))
+
+# Function for other functions to send Telegram message
+async def send_telegram_message(message: str):
+    await ptb.bot.send_message(chat_id=CHAT_ID, text=message)
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
@@ -409,19 +420,25 @@ async def check_and_update_status():
             update_sheet(status, "", names, "", "", [sheet_name])
     if stay_in_updates:
         update_sheet("P - STAY IN SGC 377", "", stay_in_updates, "", "", ["NIGHT"])
-
-    print(f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time}")
+    
+    message = f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time}"
+    print(message) # Debugging
+    return message
 
 # Step 9: Run the checks everyday
 # Function to start the scheduler
 scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust timezone
 async def start_scheduler():
     print("Starting scheduler...")
-    # scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust timezone
-
     scheduler.add_job(lambda: asyncio.create_task(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
     # scheduler.add_job(lambda: asyncio.run(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
-    print(f"📅 Run scheduled at: {scheduler.get_jobs()[0].next_run_time}")
+
+    # Send the next scheduled time to the Telegram bot
+    next_run_time = scheduler.get_jobs()[0].next_run_time
+    next_run_message = f"📅 Next status check will run at: {next_run_time.strftime('%Y-%m-%d %H:%M:%S')}"
+    print(next_run_message) # Debugging
+    await send_telegram_message(next_run_message)
+
     scheduler.start()
     print("Scheduler is running. Press Ctrl+C to exit.")
     try:
