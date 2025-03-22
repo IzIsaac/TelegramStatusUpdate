@@ -435,25 +435,18 @@ async def start_scheduler():
     print("Starting scheduler...")
     job = scheduler.add_job(lambda: asyncio.create_task(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
     # scheduler.add_job(lambda: asyncio.run(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
+    scheduler.start()
 
     # Ensure job is added before accessing it
     await asyncio.sleep(1)  # Add a small delay to ensure job registration
-    
-    if not scheduler.get_jobs():
-        print("⚠️ No jobs scheduled.")
-        await send_telegram_message("⚠️ Scheduler started, but no jobs are scheduled.")
-        return
-    
-    # Retrieve job using its ID
-    scheduled_job = scheduler.get_job(job.id)
-    if scheduled_job and scheduled_job.next_run_time:
-        next_run_time = scheduled_job.next_run_time
-        next_run_message = f"📅 Next status check will run at: {next_run_time.strftime('%Y-%m-%d %H:%M:%S')}"
+
+    jobs = scheduler.get_jobs()
+    if jobs and jobs[0].next_run_time:
+        next_run_message = f"📅 Next status check will run at: {jobs[0].next_run_time.strftime('%Y-%m-%d %H:%M:%S')}"
         print(next_run_message)
         await send_telegram_message(next_run_message)
     else:
-        print("⚠️ Failed to retrieve next run time.")
-        await send_telegram_message("⚠️ Unable to get the next run time. Please check the scheduler.")
+        print("⚠️ No scheduled jobs or next run time not available.")    
 
     # Send the next scheduled time to the Telegram bot
     # next_run_time = job.next_run_time
@@ -461,7 +454,7 @@ async def start_scheduler():
     # print(next_run_message) # Debugging
     # await send_telegram_message(next_run_message)
 
-    scheduler.start()
+    # scheduler.start()
     print("Scheduler is running. Press Ctrl+C to exit.")
     try:
         while True:
