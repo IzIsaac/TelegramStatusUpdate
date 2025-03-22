@@ -379,7 +379,7 @@ async def check_and_update_status():
 
     for sheet_name in sheets:
         print(f"🔎 Accessing worksheet: '{sheet_name}'")
-        names, stay_in_updates = [], []
+        names, stay_in_names = [], []
         worksheet = sheet.worksheet(sheet_name)
         data = worksheet.get_all_values()
         headers = data[1]  # Use second row as headers
@@ -396,14 +396,10 @@ async def check_and_update_status():
             platoon, name, date_range = row["Platoon"], row["Name"], row["Date"].strip()
             if platoon != "AE": # Stops when no longer AE ppl
                 break
-            elif sheet_name == "NIGHT" and name in stay_in_ppl and weekday == 6:
-                stay_in_updates.append(name)
-                continue # Separate list for stay ins
             elif not date_range: # Skips ppl with no date
+                if sheet_name == "NIGHT" and name in stay_in_ppl and weekday == 6:
+                    stay_in_names.append(name)
                 continue
-            elif sheet_name == "NIGHT" and name in stay_in_ppl:
-                stay_in_updates.append(name)
-                continue # Separate list for stay ins
             # print(f"📌 {sheet_name} | Row {i+3} | Status: {row['Status']} | Dates: {row['Date']}")
 
             # Formate date for comparison
@@ -416,7 +412,10 @@ async def check_and_update_status():
                 # Compare end_date to tomorrows's date
                 if end_date < tomorrow:
                     print(f"🚨 Expired status: {name}")
-                    names.append(name)
+                    if name in stay_in_ppl:
+                        stay_in_names.append(name)
+                    else:
+                        names.append(name)
             except ValueError: # Skip invalid dates
                 print(f"⚠️ Invalid date format for {name}: '{date_range}'")
                 continue
@@ -425,8 +424,8 @@ async def check_and_update_status():
         # print(names, len(names))
         if names:
             update_sheet(status, "", names, "", "", [sheet_name])
-    if stay_in_updates:
-        update_sheet("P - STAY IN SGC 377", "", stay_in_updates, "", "", ["NIGHT"])
+    if stay_in_names:
+        update_sheet("P - STAY IN SGC 377", "", stay_in_names, "", "", ["NIGHT"])
     
     message = f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time}"
     print(message) # Debugging
