@@ -72,6 +72,7 @@ async def send_startup_message():
     # Replace with the chat ID where you want to send the message
     chat_id = CHAT_ID  # Can be your own chat ID or a group chat ID
     await ptb.bot.send_message(chat_id, "Startup complete!")
+    await start_scheduler()
 
 # /Start command handler
 async def start(update: Update, _: ContextTypes.DEFAULT_TYPE):
@@ -450,10 +451,11 @@ async def start_scheduler():
         print("Shutting down scheduler.")
         scheduler.shutdown()
 
-# Call the scheduler when the app starts
-async def main():
-    await start_scheduler()
+# # Call the scheduler when the app starts
+# async def main():
+#     await start_scheduler()
 
-# Run the main function
-if __name__ == "__main__":
-    asyncio.run(main())  # This ensures the event loop is started and executed
+# # Run the main function
+# if __name__ == "__main__":
+#     asyncio.run(main())  # This ensures the event loop is started and executed
+
