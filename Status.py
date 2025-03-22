@@ -444,11 +444,22 @@ async def start_scheduler():
         await send_telegram_message("⚠️ Scheduler started, but no jobs are scheduled.")
         return
     
+    # Retrieve job using its ID
+    scheduled_job = scheduler.get_job(job.id)
+    if scheduled_job and scheduled_job.next_run_time:
+        next_run_time = scheduled_job.next_run_time
+        next_run_message = f"📅 Next status check will run at: {next_run_time.strftime('%Y-%m-%d %H:%M:%S')}"
+        print(next_run_message)
+        await send_telegram_message(next_run_message)
+    else:
+        print("⚠️ Failed to retrieve next run time.")
+        await send_telegram_message("⚠️ Unable to get the next run time. Please check the scheduler.")
+
     # Send the next scheduled time to the Telegram bot
-    next_run_time = job.next_run_time
-    next_run_message = f"📅 Next status check will run at: {next_run_time.strftime('%Y-%m-%d %H:%M:%S')}"
-    print(next_run_message) # Debugging
-    await send_telegram_message(next_run_message)
+    # next_run_time = job.next_run_time
+    # next_run_message = f"📅 Next status check will run at: {next_run_time.strftime('%Y-%m-%d %H:%M:%S')}"
+    # print(next_run_message) # Debugging
+    # await send_telegram_message(next_run_message)
 
     scheduler.start()
     print("Scheduler is running. Press Ctrl+C to exit.")
