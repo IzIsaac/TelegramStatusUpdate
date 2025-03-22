@@ -364,6 +364,7 @@ async def check_and_update_status():
     tomorrow = datetime.now() + timedelta(days=1)
     tmr = tomorrow.strftime("%d/%m/%y")
     weekday = tomorrow.weekday()  # Monday = 0, Sunday = 6
+    message = ""
     if weekday == 4:  # Friday
         stay_in_ppl = set()
         print(f"📅 Tomorrow is Friday! Updating all 'STAY IN' statuses to 'P - STAY OUT' for {len(stay_in_ppl)} personel.") # Clear stay-in list so no one stays in
@@ -376,6 +377,7 @@ async def check_and_update_status():
     else:
         print("📅 Tomorrow is a weekday.")
     print(f"Checking statuses for {tmr}...")
+    message += f"Checking statuses for {tmr}...\n"
 
     for sheet_name in sheets:
         print(f"🔎 Accessing worksheet: '{sheet_name}'")
@@ -399,8 +401,9 @@ async def check_and_update_status():
             elif not date_range: # Skips ppl with no date
                 if name in stay_in_ppl and weekday == 6 and current_status == "P - STAY OUT":
                     stay_in_names.append(name)
+                    print(f"🚨 Expired status: {name}")
+                    message += (f"🚨 Expired status {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
                 continue
-            # print(f"📌 {sheet_name} | Row {i+3} | Status: {row['Status']} | Dates: {row['Date']}")
 
             # Formate date for comparison
             date_range = date_range.replace("(AM)", "").replace("(PM)", "").strip()
@@ -412,6 +415,7 @@ async def check_and_update_status():
                 # Compare end_date to tomorrows's date
                 if end_date < tomorrow:
                     print(f"🚨 Expired status: {name}")
+                    message += (f"🚨 Expired status {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
                     if name in stay_in_ppl:
                         stay_in_names.append(name)
          
@@ -428,8 +432,8 @@ async def check_and_update_status():
     if stay_in_names:
         update_sheet("P - STAY IN SGC 377", "", stay_in_names, "", "", ["NIGHT"])
     
-    message = f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time}"
-    print(message) # Debugging
+    print(f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time}") # Debugging
+    message += f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time}"
     return message
 
 # Step 9: Run the checks everyday
