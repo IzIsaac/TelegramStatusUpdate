@@ -396,11 +396,11 @@ async def check_and_update_status():
             platoon, name, date_range = row["Platoon"], row["Name"], row["Date"].strip()
             if platoon != "AE": # Stops when no longer AE ppl
                 break
-            elif not date_range: # Skips ppl with no date
-                continue
             elif sheet_name == "NIGHT" and name in stay_in_ppl:
                 stay_in_updates.append(name)
                 continue # Separate list for stay ins
+            elif not date_range: # Skips ppl with no date
+                continue
             # print(f"📌 {sheet_name} | Row {i+3} | Status: {row['Status']} | Dates: {row['Date']}")
 
             # Formate date for comparison
@@ -434,7 +434,7 @@ async def check_and_update_status():
 scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust timezone
 async def start_scheduler():
     print("Starting scheduler...")
-    job = scheduler.add_job(lambda: asyncio.create_task(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
+    scheduler.add_job(lambda: asyncio.create_task(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
     # scheduler.add_job(lambda: asyncio.run(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
     scheduler.start()
 
@@ -447,32 +447,4 @@ async def start_scheduler():
         print(next_run_message)
         await send_telegram_message(next_run_message)
     else:
-        print("⚠️ No scheduled jobs or next run time not available.")    
-
-    # Send the next scheduled time to the Telegram bot
-    # next_run_time = job.next_run_time
-    # next_run_message = f"📅 Next status check will run at: {next_run_time.strftime('%Y-%m-%d %H:%M:%S')}"
-    # print(next_run_message) # Debugging
-    # await send_telegram_message(next_run_message)
-
-    # scheduler.start()
-    # print("Scheduler is running. Press Ctrl+C to exit.")
-    # try:
-    #     while True:
-    #         await asyncio.sleep(1)
-    # except KeyboardInterrupt:
-    #     print("Shutting down scheduler.")
-    #     scheduler.shutdown()
-
-# # Call the scheduler when the app starts
-# async def main():
-#     # Run both the bot and the scheduler concurrently
-#     await asyncio.gather(
-#         application.run_polling(),
-#         start_scheduler()
-#     )
-
-# # Run the main function
-# if __name__ == "__main__":
-#     asyncio.run(main())  # This ensures the event loop is started and executed
-
+        print("⚠️ No scheduled jobs or next run time not available.")
