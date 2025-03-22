@@ -88,7 +88,7 @@ ptb.add_handler(CommandHandler("id", get_chat_id))
 # /check Manually run status check
 async def check_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = await check_and_update_status()
-    await update.message.reply_text(message)
+    await ptb.bot.send_message(message)
 ptb.add_handler(CommandHandler("check", check_status))
 
 # Function for other functions to send Telegram message
@@ -157,7 +157,7 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     if data == "cancel":
         await query.message.reply_text("❌ Status update cancelled.")
         return
-    await query.message.reply_text("✅ Confirmed! Updating status...")
+    await query.message.reply_text("🔄 Updating status...")
 
     # Get data and update sheet
     status, location, names, date_text, reason, sheets_to_update = context.user_data.pop('status_data', (None,)*6)
@@ -169,9 +169,9 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     # Update excel sheet
     complete = update_sheet(status, location, names, date_text, reason, sheets_to_update)
     if complete:
-        await query.message.reply_text.edit_text("✅ All updates completed!")
+        await query.message.reply_text("✅ All updates completed!")
     else:
-        await query.message.reply_text.edit_text("⚠️ Error: Check logs for issue...")
+        await query.message.reply_text("⚠️ Error: Check logs for issue...")
 ptb.add_handler(CallbackQueryHandler(handle_confirmation))
 
 # Step 5: Define Official Status Mapping
