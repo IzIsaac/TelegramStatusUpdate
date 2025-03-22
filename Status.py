@@ -157,7 +157,7 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     if data == "cancel":
         await query.message.reply_text("❌ Status update cancelled.")
         return
-    await update.message.reply_text("🔄 Updating status...")
+    loading = await query.message.reply_text("🔄 Updating status...")
 
     # Get data and update sheet
     status, location, names, date_text, reason, sheets_to_update = context.user_data.pop('status_data', (None,)*6)
@@ -169,9 +169,9 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     # Update excel sheet
     complete = update_sheet(status, location, names, date_text, reason, sheets_to_update)
     if complete:
-        await update.message.reply_text("✅ All updates completed!")
+        await loading.edit_text("✅ All updates completed!")
     else:
-        await update.message.reply_text("⚠️ Error: Check logs for issue...")
+        await loading.edit_text("⚠️ Error: Check logs for issue...")
 ptb.add_handler(CallbackQueryHandler(handle_confirmation))
 
 # Step 5: Define Official Status Mapping
