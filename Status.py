@@ -396,11 +396,14 @@ async def check_and_update_status():
             platoon, name, date_range = row["Platoon"], row["Name"], row["Date"].strip()
             if platoon != "AE": # Stops when no longer AE ppl
                 break
-            elif sheet_name == "NIGHT" and name in stay_in_ppl:
+            elif sheet_name == "NIGHT" and name in stay_in_ppl and weekday == 6:
                 stay_in_updates.append(name)
                 continue # Separate list for stay ins
             elif not date_range: # Skips ppl with no date
                 continue
+            elif sheet_name == "NIGHT" and name in stay_in_ppl:
+                stay_in_updates.append(name)
+                continue # Separate list for stay ins
             # print(f"📌 {sheet_name} | Row {i+3} | Status: {row['Status']} | Dates: {row['Date']}")
 
             # Formate date for comparison
