@@ -133,7 +133,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Wait for user to confirm update
     context.user_data["status_data"] = (status, location, names, date_text, reason, sheets_to_update)
-
 ptb.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # Handles all text messages
 
 async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -340,107 +339,102 @@ def update_sheet(status, location, names, date_text, reason, sheets_to_update):
     print("✅ All updates completed!")
     return success
 
-# # Step 8: Confirm status update
-# # Function to check and update statuses
-# async def check_and_update_status():
-#     sheets = ["AM", "PM", "NIGHT"]
-#     stay_in_ppl = {"Lin Jiarui", "Lee Yang Xuan",
-#                    "Zhang Haoyuan", "Ong Jun Wei",
-#                    "Thong Wai Hung", "Lim Jia Hao",
-#                    "Alfred Leandro Liang", "Haziq Syahmi Bin Norzaim"}
-#     tomorrow = datetime.now() + timedelta(days=1)
-#     tmr = tomorrow.strftime("%d/%m/%y")
-#     weekday = tomorrow.weekday()  # Monday = 0, Sunday = 6
-#     if weekday == 4:  # Friday
-#         stay_in_ppl = set()
-#         print("Tomorrow is Friday! Updating all 'STAY IN' statuses to 'P - STAY OUT'.") # Clear stay-in list so no one stays in
-#     elif weekday == 5:  # Saturday
-#         print("Tomorrow is Saturday! No updates needed.")
-#         return None # Exit function, skipping updates
-#     elif weekday == 6:  # Sunday
-#         sheets = ["NIGHT"] # Only update NIGHT sheet
-#         print("Tomorrow is Sunday! Updating NIGHT sheet only.")
-#     else:
-#         print("Tomorrow is a weekday.")
-#     print(f"Checking statuses for {tmr}...")
+# Step 8: Check for expired status
+async def check_and_update_status():
+    sheets = ["AM", "PM", "NIGHT"]
+    stay_in_ppl = {"Lin Jiarui", "Lee Yang Xuan",
+                   "Zhang Haoyuan", "Ong Jun Wei",
+                   "Thong Wai Hung", "Lim Jia Hao",
+                   "Alfred Leandro Liang", "Haziq Syahmi Bin Norzaim"}
+    tomorrow = datetime.now() + timedelta(days=1)
+    tmr = tomorrow.strftime("%d/%m/%y")
+    weekday = tomorrow.weekday()  # Monday = 0, Sunday = 6
+    if weekday == 4:  # Friday
+        stay_in_ppl = set()
+        print(f"📅 Tomorrow is Friday! Updating all 'STAY IN' statuses to 'P - STAY OUT' for {len(stay_in_ppl)} personel.") # Clear stay-in list so no one stays in
+    elif weekday == 5:  # Saturday
+        print("📅 Tomorrow is Saturday! No updates needed.")
+        return None # Exit function, skipping updates
+    elif weekday == 6:  # Sunday
+        sheets = ["NIGHT"] # Only update NIGHT sheet
+        print("📅 Tomorrow is Sunday! Updating NIGHT sheet only.")
+    else:
+        print("📅 Tomorrow is a weekday.")
+    print(f"Checking statuses for {tmr}...")
 
-#     for sheet_name in sheets:
-#         print(f"🔎 Accessing worksheet: '{sheet_name}'")
-#         names, stay_in_updates = [], []
+    for sheet_name in sheets:
+        print(f"🔎 Accessing worksheet: '{sheet_name}'")
+        names, stay_in_updates = [], []
+        worksheet = sheet.worksheet(sheet_name)
+        data = worksheet.get_all_values()
+        headers = data[1]  # Use second row as headers
+        df = pd.DataFrame(data[2:], columns=headers)  # Data starts from the third row
 
-#         worksheet = sheet.worksheet(sheet_name)
-#         data = worksheet.get_all_values()
-#         headers = data[1]  # Use second row as headers
-#         df = pd.DataFrame(data[2:], columns=headers)  # Data starts from the third row
+        # Find the first occurrence of AE
+        first_ae_index = df[df["Platoon"] == "AE"].index.min()
+        status = "PRESENT" if sheet_name != "NIGHT" else "P - STAY OUT"
+        if pd.isna(first_ae_index):  # If no AE platoon members found
+            print(f"⚠️ No AE platoon members found in {sheet_name} sheet.")
+            continue
 
-#         # Find the first occurrence of AE
-#         first_ae_index = df[df["Platoon"] == "AE"].index.min()
-#         status = "PRESENT" if sheet_name != "NIGHT" else "P - STAY OUT"
-#         if pd.isna(first_ae_index):  # If no AE platoon members found
-#             print(f"⚠️ No AE platoon members found in {sheet_name} sheet.")
-#             continue
+        for i, row in df.iloc[first_ae_index:].iterrows():
+            platoon, name, date_range = row["Platoon"], row["Name"], row["Date"].strip()
+            if platoon != "AE": # Stops when no longer AE ppl
+                break
+            elif not date_range: # Skips ppl with no date
+                continue
+            elif sheet_name == "NIGHT" and name in stay_in_ppl:
+                stay_in_updates.append(name)
+                continue # Separate list for stay ins
+            # print(f"📌 {sheet_name} | Row {i+3} | Status: {row['Status']} | Dates: {row['Date']}")
 
-#         for i, row in df.iloc[first_ae_index:].iterrows():
-#             platoon, name, date_range = row["Platoon"], row["Name"], row["Date"].strip()
-#             if platoon != "AE": # Stops when no longer AE ppl
-#                 break
-#             elif not date_range: # Skips ppl with no date
-#                 continue
-#             elif sheet_name == "NIGHT" and name in stay_in_ppl:
-#                 stay_in_updates.append(name)
-#                 continue # Separate list for stay ins
-            
-#             # print(f"📌 {sheet_name} | Row {i+3} | Status: {row['Status']} | Dates: {row['Date']}")
+            # Formate date for comparison
+            date_range = date_range.replace("(AM)", "").replace("(PM)", "").strip()
+            # print(date_range)
+            try:
+                end_date = datetime.strptime(date_range.split("-")[-1].strip(), "%d/%m/%y")
+                # print(end_date)
 
-#             # Formate date for comparison
-#             date_range = date_range.replace("(AM)", "").replace("(PM)", "").strip()
-#             # print(date_range)
+                # Compare end_date to tomorrows's date
+                if end_date < tomorrow:
+                    print(f"🚨 Expired status: {name}")
+                    names.append(name)
+            except ValueError: # Skip invalid dates
+                print(f"⚠️ Invalid date format for {name}: '{date_range}'")
+                continue
 
-#             try:
-#                 end_date = date_range.split("-")[-1].strip()
-#                 end_date = datetime.strptime(end_date, "%d/%m/%y")
-#                 # print(end_date)
+        # Update each sheet in batches
+        # print(names, len(names))
+        if names:
+            update_sheet(status, "", names, "", "", [sheet_name])
+    if stay_in_updates:
+        update_sheet("P - STAY IN SGC 377", "", stay_in_updates, "", "", ["NIGHT"])
 
-#                 # Compare end_date to tomorrows's date
-#                 if end_date < tomorrow:
-#                     print(f"🚨 Expired status: {name}")
-#                     names.append(name)
-#             except ValueError: # Skip invalid dates
-#                 print(f"⚠️ Invalid date format for {name}: '{date_range}'")
-#                 continue
+    print(f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time}")
 
-#         # Update each sheet in batches
-#         # print(names, len(names))
-#         if names:
-#             update_sheet(status, "", names, "", "", [sheet_name])
-#     if stay_in_updates:
-#         update_sheet("P - STAY IN SGC 377", "", stay_in_updates, "", "", ["NIGHT"])
+# Step 9: Run the checks everyday
+# Function to start the scheduler
+scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust timezone
+async def start_scheduler():
+    print("Starting scheduler...")
+    # scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust timezone
 
-#     print(f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time}")
+    scheduler.add_job(lambda: asyncio.create_task(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
+    # scheduler.add_job(lambda: asyncio.run(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
+    print(f"📅 Run scheduled at: {scheduler.get_jobs()[0].next_run_time}")
+    scheduler.start()
+    print("Scheduler is running. Press Ctrl+C to exit.")
+    try:
+        while True:
+            await asyncio.sleep(3600)
+    except KeyboardInterrupt:
+        print("Shutting down scheduler.")
+        scheduler.shutdown()
 
-# # Step 9: Run the checks everyday
-# # Function to start the scheduler
-# scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust timezone
-# async def start_scheduler():
-#     print("Starting scheduler...")
-#     # scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust timezone
-#     scheduler.add_job(lambda: asyncio.run(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
-#     print("Job added. Scheduler started.")
-#     scheduler.start()
-#     print(f"📅 Run scheduled at: {scheduler.get_jobs()[0].next_run_time}")
-#     print("Scheduler is running. Press Ctrl+C to exit.")
-#     try:
-#         while True:
-#             await asyncio.sleep(1)
-#     except KeyboardInterrupt:
-#         print("Shutting down scheduler.")
-#         scheduler.shutdown()
+# Call the scheduler when the app starts
+async def main():
+    await start_scheduler()
 
-# # Call the scheduler when the app starts
-# async def main():
-#     await start_scheduler()
-
-# # Run the main function
-# if __name__ == "__main__":
-#     asyncio.run(main())  # This ensures the event loop is started and executed
-
+# Run the main function
+if __name__ == "__main__":
+    asyncio.run(main())  # This ensures the event loop is started and executed
