@@ -437,14 +437,13 @@ async def check_and_update_status():
                 continue
 
         # Update each sheet in batches
-        # print(names, len(names))
+        # Combine name list for one batch update
         names += stay_in_names
         if names:
             update_sheet(status, "", names, "", "", [sheet_name])
-        # if stay_in_names:
-        #     update_sheet(status, "", stay_in_names, "", "", [sheet_name])
-    # if stay_in_names:
-        # update_sheet("P - STAY IN SGC 377", "", stay_in_names, "", "", ["NIGHT"])
+    # Changes stay out to stay in for those needed
+    if stay_in_names:
+        update_sheet("P - STAY IN SGC 377", "", stay_in_names, "", "", ["NIGHT"])
     
     print(f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time}") # Debugging
     message += f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time.strftime("%d/%m/%y")}"
@@ -464,7 +463,7 @@ async def start_scheduler():
 
     jobs = scheduler.get_jobs()
     if jobs and jobs[0].next_run_time:
-        next_run_message = f"📅 Next status check will run at: {jobs[0].next_run_time.strftime('%Y-%m-%d %H:%M:%S')}"
+        next_run_message = f"📅 Next status check will run at: {jobs[0].next_run_time.strftime('"%d/%m/%y" %H:%M:%S')}"
         print(next_run_message)
         await send_telegram_message(next_run_message)
     else:
