@@ -107,6 +107,10 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+@app.get("/ping")
+async def ping():
+    return {"message": "pong"}
+
 @app.post("/webhook")
 async def process_update(request: Request):
     req = await request.json()
