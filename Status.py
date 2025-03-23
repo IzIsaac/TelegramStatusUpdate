@@ -174,7 +174,7 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
         await loading.edit_text("⚠️ Error: Check logs for issue...")
 ptb.add_handler(CallbackQueryHandler(handle_confirmation))
 
-# Step 5: Define Official Status Mapping
+# Step 5: Define Official and Informal Status Mapping
 official_status_mapping = {
     "PRESENT": "PRESENT",
     "ATTACH IN": "ATTACH IN",
