@@ -338,10 +338,6 @@ def update_sheet(status, location, names, date_text, reason, sheets_to_update):
 
             # Update the Google Sheet
             updates.extend([
-                # (f"{chr(65 + status_col)}{row_index}", [[status]]),
-                # (f"{chr(65 + date_col)}{row_index}", [[date_text]]),
-                # (f"{chr(65 + remarks_col)}{row_index}", [[reason]]),
-                # (f"{chr(65 + location_col)}{row_index}", [[location]])
                 {"range": f"{chr(65 + status_col)}{row_index}", "values": [[status]]},
                 {"range": f"{chr(65 + date_col)}{row_index}", "values": [[date_text]]},
                 {"range": f"{chr(65 + remarks_col)}{row_index}", "values": [[reason]]},
@@ -432,7 +428,6 @@ async def check_and_update_status():
                     message += (f"🚨 Expired status: {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
                     if name in stay_in_ppl:
                         stay_in_names.append(name)
-         
                     else:
                         names.append(name)
             except ValueError: # Skip invalid dates
@@ -443,6 +438,8 @@ async def check_and_update_status():
         # print(names, len(names))
         if names:
             update_sheet(status, "", names, "", "", [sheet_name])
+        if stay_in_names:
+            update_sheet(status, "", stay_in_names, "", "", [sheet_name])
     if stay_in_names:
         update_sheet("P - STAY IN SGC 377", "", stay_in_names, "", "", ["NIGHT"])
     
