@@ -1,18 +1,16 @@
-from email import message
-import keyboard
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 from telegram.constants import ParseMode
-from contextlib import asynccontextmanager
-from http import HTTPStatus
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext._contexttypes import ContextTypes
-from fastapi import FastAPI, Request, Response
+# from telegram.ext._contexttypes import ContextTypes
+from contextlib import asynccontextmanager
 from google.oauth2.service_account import Credentials
+from fastapi import FastAPI, Request, Response
 from dotenv import load_dotenv
-import gspread
+from http import HTTPStatus
 import pandas as pd
-import base64
 import tempfile
+import gspread
+import base64
 import re
 import os
 
@@ -402,7 +400,7 @@ async def check_and_update_status():
                 if name in stay_in_ppl and weekday == 6 and current_status == "P - STAY OUT":
                     stay_in_names.append(name)
                     print(f"🚨 Expired status: {name}")
-                    message += (f"🚨 Expired status {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
+                    message += (f"🚨 Expired status: {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
                 continue
 
             # Formate date for comparison
@@ -415,7 +413,7 @@ async def check_and_update_status():
                 # Compare end_date to tomorrows's date
                 if end_date < tomorrow:
                     print(f"🚨 Expired status: {name}")
-                    message += (f"🚨 Expired status {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
+                    message += (f"🚨 Expired status: {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
                     if name in stay_in_ppl:
                         stay_in_names.append(name)
          
