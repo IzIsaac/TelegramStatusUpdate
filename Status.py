@@ -88,7 +88,7 @@ ptb.add_handler(CommandHandler("id", get_chat_id))
 async def check_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     telegram_message = await ptb.bot.send_message(chat_id=CHAT_ID, text="🔄 Checking status...")
     message = await check_and_update_status()
-    await telegram_message.edit_text(chat_id=CHAT_ID, text=message)
+    await telegram_message.edit_text(message)
 ptb.add_handler(CommandHandler("check", check_status))
 
 # Function for other functions to send Telegram message
@@ -419,7 +419,9 @@ async def check_and_update_status():
             date_range = date_range.replace("(AM)", "").replace("(PM)", "").strip()
             # print(date_range)
             try:
-                end_date = datetime.strptime(date_range.split("-")[-1].strip(), "%d/%m/%y")
+                # end_date = datetime.strptime(date_range.split("-")[-1].strip(), "%d/%m/%y")
+                date_parts = date_range.split("-")
+                end_date = datetime.strptime(date_parts[-1].strip(), "%d/%m/%y") if len(date_parts) > 1 else datetime.strptime(date_parts[0].strip(), "%d/%m/%y")
                 # print(end_date)
 
                 # Compare end_date to tomorrows's date
@@ -436,10 +438,11 @@ async def check_and_update_status():
 
         # Update each sheet in batches
         # print(names, len(names))
+        names += stay_in_names
         if names:
             update_sheet(status, "", names, "", "", [sheet_name])
-        if stay_in_names:
-            update_sheet(status, "", stay_in_names, "", "", [sheet_name])
+        # if stay_in_names:
+        #     update_sheet(status, "", stay_in_names, "", "", [sheet_name])
     if stay_in_names:
         update_sheet("P - STAY IN SGC 377", "", stay_in_names, "", "", ["NIGHT"])
     
