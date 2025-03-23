@@ -1,4 +1,3 @@
-from regex import F
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 from telegram.constants import ParseMode
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
