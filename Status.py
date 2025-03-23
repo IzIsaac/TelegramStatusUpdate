@@ -175,7 +175,7 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
 ptb.add_handler(CallbackQueryHandler(handle_confirmation))
 
 # Step 5: Define Official Status Mapping
-status_mapping = {
+official_status_mapping = {
     "PRESENT": "PRESENT",
     "ATTACH IN": "ATTACH IN",
     "DUTY": "DUTY",
@@ -205,9 +205,9 @@ def extract_message(message):
     location = status_match.group(2).strip() if status_match and status_match.group(2) else ""
 
     # Convert status to official version
-    for keyword in status_mapping.keys():
+    for keyword in official_status_mapping.keys():
         if keyword.upper() in raw_status.upper():  # Case-insensitive matching
-            status = status_mapping[keyword]  # Return mapped status
+            status = official_status_mapping[keyword]  # Return mapped status
             break
         else:
             status = "Invalid"
