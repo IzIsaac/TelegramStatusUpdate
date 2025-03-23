@@ -88,7 +88,7 @@ ptb.add_handler(CommandHandler("id", get_chat_id))
 async def check_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     telegram_message = await ptb.bot.send_message(chat_id=CHAT_ID, text="🔄 Checking status...")
     message = await check_and_update_status()
-    await telegram_message.edit_message_text(chat_id=CHAT_ID, text=message)
+    await telegram_message.edit_text(chat_id=CHAT_ID, text=message)
 ptb.add_handler(CommandHandler("check", check_status))
 
 # Function for other functions to send Telegram message
