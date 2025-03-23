@@ -338,10 +338,14 @@ def update_sheet(status, location, names, date_text, reason, sheets_to_update):
 
             # Update the Google Sheet
             updates.extend([
-                (f"{chr(65 + status_col)}{row_index}", [[status]]),
-                (f"{chr(65 + date_col)}{row_index}", [[date_text]]),
-                (f"{chr(65 + remarks_col)}{row_index}", [[reason]]),
-                (f"{chr(65 + location_col)}{row_index}", [[location]])
+                # (f"{chr(65 + status_col)}{row_index}", [[status]]),
+                # (f"{chr(65 + date_col)}{row_index}", [[date_text]]),
+                # (f"{chr(65 + remarks_col)}{row_index}", [[reason]]),
+                # (f"{chr(65 + location_col)}{row_index}", [[location]])
+                {"range": f"{chr(65 + status_col)}{row_index}", "values": [[status]]},
+                {"range": f"{chr(65 + date_col)}{row_index}", "values": [[date_text]]},
+                {"range": f"{chr(65 + remarks_col)}{row_index}", "values": [[reason]]},
+                {"range": f"{chr(65 + location_col)}{row_index}", "values": [[location]]}
             ])
 
             # for cell, value in updates:
