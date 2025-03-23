@@ -1,3 +1,4 @@
+from regex import F
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 from telegram.constants import ParseMode
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -86,8 +87,9 @@ ptb.add_handler(CommandHandler("id", get_chat_id))
 
 # /check Manually run status check
 async def check_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    telegram_message = await ptb.bot.send_message(chat_id=CHAT_ID, text="🔄 Checking status...")
     message = await check_and_update_status()
-    await ptb.bot.send_message(chat_id=CHAT_ID, text=message)
+    await telegram_message.edit_message_text(chat_id=CHAT_ID, text=message)
 ptb.add_handler(CommandHandler("check", check_status))
 
 # Function for other functions to send Telegram message
@@ -321,30 +323,42 @@ def update_sheet(status, location, names, date_text, reason, sheets_to_update):
             print(f"⚠️ Error: Required columns missing in {sheet_name} sheet.")
             continue
 
+        # Collect all updates in a batch
+        updates = []
+
         # Update each person's record
         for name in names:
             matching_rows = df[df["Name"].str.contains(name, case=False, na=False)].index.tolist()
 
             if not matching_rows or status == "Invalid":
                 success = False
-                error_msg = f"⚠️ No matching name found in {sheet_name} sheet for '{name}'" if not matching_rows else f"⚠️ Error: Status {status} for {name} is not valid."
-                print(error_msg)
+                print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'" if not matching_rows else f"⚠️ Error: Status {status} for {name} is not valid.")
                 continue
 
             row_index = matching_rows[0] + 3  # Adjusting for header rows
 
             # Update the Google Sheet
-            updates = [
+            updates.extend([
                 (f"{chr(65 + status_col)}{row_index}", [[status]]),
                 (f"{chr(65 + date_col)}{row_index}", [[date_text]]),
                 (f"{chr(65 + remarks_col)}{row_index}", [[reason]]),
                 (f"{chr(65 + location_col)}{row_index}", [[location]])
-            ]
+            ])
 
-            for cell, value in updates:
-                worksheet.update(range_name=cell, values=value)
+            # for cell, value in updates:
+            #     worksheet.update(range_name=cell, values=value)
 
-            print(f"✅ Successfully updated {name}'s record in {sheet_name} sheet (Row {row_index})")
+            print(f"✅ Qued update for {name}'s record in {sheet_name} sheet (Row {row_index})")
+
+        # Batch update if any
+        if updates:
+            try:
+                worksheet.batch_update(updates)
+                print(f"✅ Successfully updated {sheet_name} sheet.")
+            except Exception as e:
+                success = False
+                print(f"⚠️ Error during batch update in {sheet_name}: {e}")
+
     if success:
         print("✅ All updates completed!")
     else:
@@ -410,7 +424,7 @@ async def check_and_update_status():
                 # print(end_date)
 
                 # Compare end_date to tomorrows's date
-                if end_date < tomorrow:
+                if end_date <= tomorrow:
                     print(f"🚨 Expired status: {name}")
                     message += (f"🚨 Expired status: {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
                     if name in stay_in_ppl:
