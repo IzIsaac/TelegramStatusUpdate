@@ -197,7 +197,7 @@ official_status_mapping = {
     "MA": "MA"
 }
 
-# Step 6: Extract Fields
+# Step 6: Extract information
 def extract_message(message):
     # Extract Status and Location (if in "Status:")
     status_match = re.search(r"Status\s*:?\s*([A-Z]+(?:\s+[A-Z]+)?)\s*(?:\s*@\s*(.+))?$", message, re.IGNORECASE | re.MULTILINE)
