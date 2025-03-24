@@ -180,12 +180,12 @@ ptb.add_handler(CallbackQueryHandler(handle_confirmation))
 
 # Step 5: Define Official and Informal Status Mapping
 official_status_mapping = {
-    "PRESENT": "PRESENT",
     "ATTACH IN": "ATTACH IN",
     "DUTY": "DUTY",
     "UDO": "DUTY",
     "CDOS": "DUTY",
     "GUARD": "DUTY",
+    "REST": "DUTY",
     "WFH": "WFH",
     "OUTSTATION": "OUTSTATION",
     "BLOOD DONATION": "OUTSTATION",
@@ -456,7 +456,7 @@ async def check_and_update_status():
 scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust timezone
 async def start_scheduler():
     print("Starting scheduler...")
-    scheduler.add_job(lambda: asyncio.create_task(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
+    scheduler.add_job(lambda: asyncio.run(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
     # scheduler.add_job(lambda: asyncio.run(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
     scheduler.start()
 
