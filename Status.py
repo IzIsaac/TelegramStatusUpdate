@@ -191,10 +191,10 @@ official_status_mapping = {
     "BLOOD DONATION": "OUTSTATION",
     "OS": "OUTSTATION",
     "CSE": "CSE",
+    "COURSE": "CSE",
     "AO": "AO",
     "LEAVE": "LEAVE",
     "OFF": "OFF",
-    "RSI/RSO": "RSI/RSO",
     "RSI": "RSI/RSO",
     "RSO": "RSI/RSO",
     "MC": "MC",
@@ -204,17 +204,16 @@ official_status_mapping = {
 # Step 6: Extract information
 def extract_message(message):
     # Extract Status and Location (if in "Status:")
-    status_match = re.search(r"Status\s*:?\s*([A-Z]+(?:\s+[A-Z]+)?)\s*(?:\s*@\s*(.+))?$", message, re.IGNORECASE | re.MULTILINE)
+    status_match = re.search(r"Status\s*:?\s*(.+?)\s*(?:@\s*(.+))?$", message, re.IGNORECASE | re.MULTILINE)
     raw_status = status_match.group(1).strip() if status_match else "Unknown"
     location = status_match.group(2).strip() if status_match and status_match.group(2) else ""
 
     # Convert status to official version
+    status = "Invalid"
     for keyword in official_status_mapping.keys():
         if keyword.upper() in raw_status.upper():  # Case-insensitive matching
             status = official_status_mapping[keyword]  # Return mapped status
             break
-        else:
-            status = "Invalid"
 
     if status == "Invalid":
         print(f"⚠️ Error: '{raw_status}' is not a valid status.")
@@ -263,15 +262,14 @@ def extract_message(message):
         # Convert individual dates
         start_date = re.sub(six_digit_pattern, r"\1/\2/\3", start_date)
         end_date = re.sub(six_digit_pattern, r"\1/\2/\3", end_date)
-
         date_text = f"{start_date} - {end_date}"
     else:
         # Convert single date
         date_text = re.sub(six_digit_pattern, r"\1/\2/\3", date_text)
 
-    if "(AM)" in date_text.upper():
+    if "(AM)" in date_text.upper() or "(AM)" in raw_status:
         period = "AM"
-    elif "(PM)" in date_text.upper():
+    elif "(PM)" in date_text.upper() or "(AM)" in raw_status:
         period = "PM"
 
     # Determine sheets to update
@@ -284,7 +282,7 @@ def extract_message(message):
         sheets_to_update.extend(["AM", "PM"])  # If no period specified, update both
 
     # Night sheet updates only for specific statuses
-    if status in ["DUTY", "CSE", "AO", "LEAVE", "OFF", "MC"]:
+    if status in ["DUTY", "CSE", "AO", "LEAVE", "OFF", "MC"] and period != "AM":
         sheets_to_update.append("NIGHT")
 
     # Extract Reason (if exists)
