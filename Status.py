@@ -313,12 +313,14 @@ def update_sheet(status, location, names, date_text, reason, sheets_to_update):
         headers = data[1]  # Use second row as headers
         df = pd.DataFrame(data[2:], columns=headers)  # Data starts from the third row
 
+        # Normalize headers by stripping leading/trailing whitespace
+        formatted_headers = [header.strip() for header in headers]
         # Column indices
         try:
-            status_col = headers.index("Status")
-            date_col = headers.index("Date")
-            remarks_col = headers.index("Remarks")
-            location_col = headers.index("Location")
+            status_col = formatted_headers.index("Status")
+            date_col = formatted_headers.index("Date")
+            remarks_col = formatted_headers.index("Remarks")
+            location_col = formatted_headers.index("Location")
         except ValueError:
             success = False
             print(f"⚠️ Error: Required columns missing in {sheet_name} sheet.")
@@ -448,16 +450,20 @@ async def check_and_update_status():
         update_sheet("P - STAY IN SGC 377", "", stay_in_names, "", "", ["NIGHT"])
     
     print(f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time}") # Debugging
-    message += f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time.strftime("%d/%m/%y")}"
+    message += f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time.strftime('%d/%m/%y')}"
     return message
 
 # Step 9: Run the checks everyday
+def run_asyncio_task():
+    loop = asyncio.get_event_loop()
+    loop.create_task(check_and_update_status())
+
 # Function to start the scheduler
 scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust timezone
 async def start_scheduler():
     print("Starting scheduler...")
-    scheduler.add_job(lambda: asyncio.run(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
-    # scheduler.add_job(lambda: asyncio.run(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
+    # scheduler.add_job(lambda: asyncio.create_task(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
+    scheduler.add_job(run_asyncio_task, "cron", hour=22, minute=30, misfire_grace_time=60)
     scheduler.start()
 
     # Ensure job is added before accessing it
@@ -465,7 +471,7 @@ async def start_scheduler():
 
     jobs = scheduler.get_jobs()
     if jobs and jobs[0].next_run_time:
-        next_run_message = f"📅 Next status check will run at: {jobs[0].next_run_time.strftime('"%d/%m/%y" %H:%M:%S')}"
+        next_run_message = f"📅 Next status check will run at: {jobs[0].next_run_time.strftime('%d/%m/%y %H:%M:%S')}"
         print(next_run_message)
         await send_telegram_message(next_run_message)
     else:
