@@ -455,8 +455,22 @@ async def check_and_update_status():
 
 # Step 9: Run the checks everyday
 def run_asyncio_task():
-    loop = asyncio.get_event_loop()
-    loop.create_task(check_and_update_status())
+    # loop = asyncio.get_event_loop()
+    # loop.create_task(check_and_update_status())
+    asyncio.run(check_and_update_status())
+
+# # Step 9: Run the checks everyday
+# def run_asyncio_task():
+#     try:
+#         # Try to get the event loop
+#         loop = asyncio.get_event_loop()
+#     except RuntimeError:
+#         # If there's no event loop in the current thread, create a new one
+#         loop = asyncio.new_event_loop()
+#         asyncio.set_event_loop(loop)
+    
+#     # Create and run the async task
+#     loop.run_until_complete(check_and_update_status())
 
 # Function to start the scheduler
 scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust timezone
