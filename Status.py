@@ -455,8 +455,6 @@ async def check_and_update_status():
 
 # Step 9: Run the checks everyday
 def run_asyncio_task():
-    # loop = asyncio.get_event_loop()
-    # loop.create_task(check_and_update_status())
     asyncio.run(check_and_update_status())
 
 # # Step 9: Run the checks everyday
@@ -477,7 +475,7 @@ scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust ti
 async def start_scheduler():
     print("Starting scheduler...")
     # scheduler.add_job(lambda: asyncio.create_task(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
-    scheduler.add_job(run_asyncio_task, "cron", hour=22, minute=30, misfire_grace_time=60)
+    scheduler.add_job(run_asyncio_task, "cron", hour=23, minute=13, misfire_grace_time=60)
     scheduler.start()
 
     # Ensure job is added before accessing it
