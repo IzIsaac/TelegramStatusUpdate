@@ -432,7 +432,24 @@ async def update_sheet(status, location, names, date_text, reason, sheets_to_upd
 
         # Update each person's record
         for name in names:
-            matching_rows = df[df["Name"].str.contains(name, case=False, na=False)].index.tolist()
+            # Perform fuzzy matching against all names in the "Name" column
+            choices = df["Name"].tolist()
+            # Format names
+            choices = df["Name"].str.strip().str.lower().tolist()
+            formatted_name = name.strip().lower()
+            # print(f"Choices: {choices}")
+            best_match, score, row_index = process.extractOne(formatted_name, choices, scorer=fuzz.partial_ratio)
+
+            # Set a threshold for matching
+            if score >= 50:  # Adjust threshold as needed
+                print(f"✅ Match found: '{name}' matched with '{best_match}' (Score: {score})")
+                matching_rows = [df.index[row_index]]  # Get the matched row index
+            else:
+                success = False
+                msg = f"⚠️ No suitable match found in {sheet_name} sheet for '{name}'"
+                print(msg)
+                message += f"{msg}\n"
+                continue
 
             if not matching_rows or status == "Invalid":
                 success = False
