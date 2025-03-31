@@ -434,56 +434,28 @@ async def update_sheet(status, location, names, date_text, reason, sheets_to_upd
 
         # Update each person's record
         for name in names:
-            # Perform fuzzy matching against all names in the "Name" column
-            choices = df["Name"].tolist()
-            # Format names
-            choices = df["Name"].str.strip().str.lower().tolist()
-            formatted_name = name.strip().lower()
-            # print(f"Choices: {choices}")
-            best_match, score, row_index = process.extractOne(formatted_name, choices, scorer=fuzz.partial_ratio)
+            # Split the name into parts (tokens)
+            name_parts = name.split()
 
-            # Set a threshold for matching
-            if score >= 50:  # Adjust threshold as needed
-                print(f"✅ Match found: '{name}' matched with '{best_match}' (Score: {score})")
-                matching_rows = [df.index[row_index]]  # Get the matched row index
-            else:
-                success = False
-                msg = f"⚠️ No suitable match found in {sheet_name} sheet for '{name}'"
-                print(msg)
-                message += f"{msg}\n"
-                continue
+            # Attempt to match each part of the name against the Excel sheet
+            for part in name_parts:
+                print(part)
+                matching_rows = df[df["Name"].str.contains(part, case=False, na=False)].index.tolist()
+
+                # Check if there's exactly one match (to confidently identify the person)
+                if len(matching_rows) == 1:
+                    print(f"✅ Match found: '{name}' matched with row index {matching_rows[0] + 3}")
+                    break
+                elif len(matching_rows) == 0:
+                    print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'")
+                else:
+                    # Ambiguous matches (multiple rows match the name tokens)
+                    print(f"⚠️ Multiple matches found for '{part}' in {sheet_name} sheet: {matching_rows}")
 
             if not matching_rows or status == "Invalid":
                 success = False
-                msg = f"⚠️ No matching name found in {sheet_name} sheet for '{name}'" if not matching_rows else f"⚠️ Error: Status {status} for {name} is not valid."
-                print(msg)
-                message += f"{msg}\n"
+                print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'" if not matching_rows else f"⚠️ Error: Status {status} for {name} is not valid.")
                 continue
-
-        # # Update each person's record
-        # for name in names:
-        #     # Split the name into parts (tokens)
-        #     name_parts = name.split()
-
-        #     # Attempt to match each part of the name against the Excel sheet
-        #     for part in name_parts:
-        #         print(part)
-        #         matching_rows = df[df["Name"].str.contains(part, case=False, na=False)].index.tolist()
-
-        #         # Check if there's exactly one match (to confidently identify the person)
-        #         if len(matching_rows) == 1:
-        #             print(f"✅ Match found: '{name}' matched with row index {matching_rows[0] + 3}")
-        #             break
-        #         elif len(matching_rows) == 0:
-        #             print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'")
-        #         else:
-        #             # Ambiguous matches (multiple rows match the name tokens)
-        #             print(f"⚠️ Multiple matches found for '{part}' in {sheet_name} sheet: {matching_rows}")
-
-        #     if not matching_rows or status == "Invalid":
-        #         success = False
-        #         print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'" if not matching_rows else f"⚠️ Error: Status {status} for {name} is not valid.")
-        #         continue
 
             row_index = matching_rows[0] + 3  # Adjusting for header rows
 
@@ -551,57 +523,29 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
         # Collect all updates in a batch
         updates = []
 
-        # # Update each person's record
-        # for name in names:
-        #     # Split the name into parts (tokens)
-        #     name_parts = name.split()
-
-        #     # Attempt to match each part of the name against the Excel sheet
-        #     for part in name_parts:
-        #         print(part)
-        #         matching_rows = df[df["Name"].str.contains(part, case=False, na=False)].index.tolist()
-
-        #         # Check if there's exactly one match (to confidently identify the person)
-        #         if len(matching_rows) == 1:
-        #             print(f"✅ Match found: '{name}' matched with row index {matching_rows[0] + 3}")
-        #             break
-        #         elif len(matching_rows) == 0:
-        #             print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'")
-        #         else:
-        #             # Ambiguous matches (multiple rows match the name tokens)
-        #             print(f"⚠️ Multiple matches found for '{part}' in {sheet_name} sheet: {matching_rows}")
-
-        #     if not matching_rows or informal_status == "Invalid":
-        #         success = False
-        #         print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'" if not matching_rows else f"⚠️ Error: Status {informal_status} for {name} is not valid.")
-        #         continue
-
         # Update each person's record
         for name in names:
-            # Perform fuzzy matching against all names in the "Name" column
-            choices = df["Name"].tolist()
-            # Format names
-            choices = df["Name"].str.strip().str.lower().tolist()
-            formatted_name = name.strip().lower()
-            # print(f"Choices: {choices}")
-            best_match, score, row_index = process.extractOne(formatted_name, choices, scorer=fuzz.partial_ratio)
+            # Split the name into parts (tokens)
+            name_parts = name.split()
 
-            # Set a threshold for matching
-            if score >= 50:  # Adjust threshold as needed
-                print(f"✅ Match found: '{name}' matched with '{best_match}' (Score: {score})")
-                matching_rows = [df.index[row_index]]  # Get the matched row index
-            else:
-                success = False
-                msg = f"⚠️ No suitable match found in {sheet_name} sheet for '{name}'"
-                print(msg)
-                message += f"{msg}\n"
-                continue
+            # Attempt to match each part of the name against the Excel sheet
+            for part in name_parts:
+                print(part)
+                matching_rows = df[df["Name"].str.contains(part, case=False, na=False)].index.tolist()
+
+                # Check if there's exactly one match (to confidently identify the person)
+                if len(matching_rows) == 1:
+                    print(f"✅ Match found: '{name}' matched with row index {matching_rows[0] + 3}")
+                    break
+                elif len(matching_rows) == 0:
+                    print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'")
+                else:
+                    # Ambiguous matches (multiple rows match the name tokens)
+                    print(f"⚠️ Multiple matches found for '{part}' in {sheet_name} sheet: {matching_rows}")
 
             if not matching_rows or informal_status == "Invalid":
                 success = False
-                msg = f"⚠️ No matching name found in {sheet_name} sheet for '{name}'" if not matching_rows else f"⚠️ Error: Status {informal_status} for {name} is not valid."
-                print(msg)
-                message += f"{msg}\n"
+                print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'" if not matching_rows else f"⚠️ Error: Status {informal_status} for {name} is not valid.")
                 continue
 
             row_index = matching_rows[0] + 3  # Adjusting for header rows
