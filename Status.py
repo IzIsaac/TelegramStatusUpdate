@@ -441,7 +441,7 @@ async def update_sheet(status, location, names, date_text, reason, sheets_to_upd
             best_match, score, row_index = process.extractOne(formatted_name, choices, scorer=fuzz.partial_ratio)
 
             # Set a threshold for matching
-            if score >= 50:  # Adjust threshold as needed
+            if score >= 60:  # Adjust threshold as needed
                 print(f"✅ Match found: '{name}' matched with '{best_match}' (Score: {score})")
                 matching_rows = [df.index[row_index]]  # Get the matched row index
             else:
@@ -560,7 +560,7 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
             best_match, score, row_index = process.extractOne(formatted_name, choices, scorer=fuzz.partial_ratio)
 
             # Set a threshold for matching
-            if score >= 50:  # Adjust threshold as needed
+            if score >= 60:  # Adjust threshold as needed
                 print(f"✅ Match found: '{name}' matched with '{best_match}' (Score: {score})")
                 matching_rows = [df.index[row_index]]  # Get the matched row index
             else:
