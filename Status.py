@@ -683,10 +683,10 @@ async def check_and_update_status():
         # Combine name list for one batch update
         names += stay_in_names
         if names:
-            update_sheet(status, "", names, "", "", [sheet_name])
+            await update_sheet(status, "", names, "", "", [sheet_name])
     # Changes stay out to stay in for those needed
     if stay_in_names:
-        update_sheet("P - STAY IN SGC 377", "", stay_in_names, "", "", ["NIGHT"])
+        await update_sheet("P - STAY IN SGC 377", "", stay_in_names, "", "", ["NIGHT"])
     msg = f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time.strftime('%d/%m/%y')}"
     print(msg) # Debugging
     message += msg
