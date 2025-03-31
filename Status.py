@@ -178,8 +178,8 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
     
     # Update excel sheet
-    complete = update_sheet(status, location, names, date_text, reason, sheets_to_update)
-    success = update_informal_sheet(informal_status, names, date_text, informal_sheets_to_update)
+    complete = await update_sheet(status, location, names, date_text, reason, sheets_to_update)
+    success = await update_informal_sheet(informal_status, names, date_text, informal_sheets_to_update)
     if complete and success:
         await loading.edit_text("✅ All updates completed!")
     else:
