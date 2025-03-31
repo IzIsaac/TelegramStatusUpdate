@@ -405,7 +405,7 @@ def get_column_letter(index):
     return letters
 
 # Step 7: Update Google Sheets for each sheet
-def update_sheet(status, location, names, date_text, reason, sheets_to_update):
+async def update_sheet(status, location, names, date_text, reason, sheets_to_update):
     success, message = True, ""
 
     for sheet_name in sheets_to_update:
@@ -475,10 +475,10 @@ def update_sheet(status, location, names, date_text, reason, sheets_to_update):
         msg = "⚠️ Error: Check logs for issue..."
     print(msg)
     message += f"{msg}\n"
-    send_telegram_message(message)
+    await send_telegram_message(message)
     return success
 
-def update_informal_sheet(informal_status, names, date_text, informal_sheets_to_update):
+async def update_informal_sheet(informal_status, names, date_text, informal_sheets_to_update):
     success, message = True, ""
 
     for sheet_name in informal_sheets_to_update:
@@ -616,7 +616,7 @@ def update_informal_sheet(informal_status, names, date_text, informal_sheets_to_
         msg = "⚠️ Error: Check logs for issue..."
         print(msg)
         message += f"{msg}\n"
-    send_telegram_message(message)
+    await send_telegram_message(message)
     return success
 
 # Step 8: Check for expired status
