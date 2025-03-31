@@ -5,6 +5,7 @@ from telegram.ext._contexttypes import ContextTypes
 from contextlib import asynccontextmanager
 from google.oauth2.service_account import Credentials
 from fastapi import FastAPI, Request, Response
+from rapidfuzz import process, fuzz
 from dotenv import load_dotenv
 from http import HTTPStatus
 import pandas as pd
@@ -52,6 +53,8 @@ else:
 # Step 3: Open Google Sheet
 google_sheets_url = os.getenv("google_sheets_url")
 sheet = client.open_by_url(google_sheets_url)
+informal_google_sheets_url = os.getenv("informal_google_sheets_url")
+informal_sheet = client.open_by_url(informal_google_sheets_url)
 print("✅ Successfully connected to Google Sheets!")
 
 # Step 4: Building the bot
@@ -126,7 +129,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(f"📩 New message from {sender}: \n{message}") # Debugging
 
     # Process the message and extract details
-    status, location, names, date_text, reason, sheets_to_update = extract_message(message)
+    data = extract_message(message)
+    status, informal_status, location, names, date_text, reason, sheets_to_update, informal_sheets_to_update = data["status"], data["informal_status"], data["location"], data["names"], data["date_text"], data["reason"], data["sheets_to_update"], data["informal_sheets_to_update"]
 
     # Confirmation button
     keyboard = [
@@ -140,14 +144,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Send multiple messages
     response = (f"✅ Status Update Recieved\n"
                     f"📌 Status: {status}\n"
+                    f"📌 Informal Status: {informal_status}\n"
                     f"📍 Location: {location}\n"
                     f"👥 Names: {', '.join(names) if names else 'None'}\n"
                     f"📅 Dates: {date_text}\n"
-                    f"📄 Reason: {reason}\n")
+                    f"📄 Reason: {reason}\n"
+                    f"📄 Sheets: {sheets_to_update}\n"
+                    f"📄 Informal Sheets: {informal_sheets_to_update}\n")
     await update.message.reply_text(response, reply_markup=reply_markup, parse_mode="Markdown"), 
 
     # Wait for user to confirm update
-    context.user_data["status_data"] = (status, location, names, date_text, reason, sheets_to_update)
+    context.user_data["status_data"] = (status, informal_status, location, names, date_text, reason, sheets_to_update, informal_sheets_to_update)
 ptb.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # Handles all text messages
 
 async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -164,7 +171,7 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     loading = await query.message.reply_text("🔄 Updating status...")
 
     # Get data and update sheet
-    status, location, names, date_text, reason, sheets_to_update = context.user_data.pop('status_data', (None,)*6)
+    status, informal_status, location, names, date_text, reason, sheets_to_update, informal_sheets_to_update = context.user_data.pop('status_data', (None,)*8)
 
     if not status:
         print("Error: No data found in context.")
@@ -172,7 +179,8 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     # Update excel sheet
     complete = update_sheet(status, location, names, date_text, reason, sheets_to_update)
-    if complete:
+    success = update_informal_sheet(informal_status, names, date_text, informal_sheets_to_update)
+    if complete and success:
         await loading.edit_text("✅ All updates completed!")
     else:
         await loading.edit_text("⚠️ Error: Check logs for issue...")
@@ -201,8 +209,33 @@ official_status_mapping = {
     "MA": "MA"
 }
 
+informal_status_mapping = {
+    "DUTY": "GD",
+    "UDO": "UDO",
+    "CDOS": "CDOS",
+    "REST": "GR",
+    "OUTSTATION": "OS",
+    "BLOOD DONATION": "OS",
+    "OS": "OS",
+    "CSE": "C",
+    "COURSE": "C",
+    "AO": "AO",
+    "ATTACH": "AO",
+    "OVERSEAS": "OL",
+    "LEAVE": "L",
+    "OFF": "O",
+    "RSI": "RSI",
+    "RSO": "RSO",
+    "MC": "MC",
+    "MA": "MA",
+    "XWB": "XWB",
+    "PRESENT": "1"
+}
+
 # Step 6: Extract information
 def extract_message(message):
+    lines = message.split("\n")
+
     # Extract Status and Location (if in "Status:")
     status_match = re.search(r"Status\s*:?\s*(.+?)\s*(?:@\s*(.+))?$", message, re.IGNORECASE | re.MULTILINE)
     raw_status = status_match.group(1).strip() if status_match else "Unknown"
@@ -214,6 +247,11 @@ def extract_message(message):
         if keyword.upper() in raw_status.upper():  # Case-insensitive matching
             status = official_status_mapping[keyword]  # Return mapped status
             break
+    # Convert status to informal version
+    for keyword in informal_status_mapping.keys():
+        if keyword.upper() in raw_status.upper():  # Case-insensitive matching
+            informal_status = informal_status_mapping[keyword]  # Return mapped status
+            break
 
     if status == "Invalid":
         print(f"⚠️ Error: '{raw_status}' is not a valid status.")
@@ -222,11 +260,11 @@ def extract_message(message):
     name_lines = []
     name_section = False
 
-    for line in message.split("\n"):
+    for line in lines:
         line = line.strip()
         
         # If "R/Name" is found, start capturing names
-        match = re.match(r"R/Names?\s*:?\s*(.*)", line, re.IGNORECASE)
+        match = re.match(r"R/Names?\s*:?\s*(.+)", line, re.IGNORECASE)
         if match:
             name_section = True
             names_in_line = match.group(1).strip()
@@ -246,15 +284,17 @@ def extract_message(message):
     # Remove the first word (rank) from each name
     names = [" ".join(name.split()[1:]) for name in name_lines if len(name.split()) > 1]
 
+    # Extract Dates
     date_match = re.search(r"Dates?\s*:?\s*(.+)", message, re.IGNORECASE)
     date_text = date_match.group(1).strip() if date_match else ""
-    period = ""
 
     # Convert date to fixed format (DD/MM/YY)
     # Regular expression for 6-digit (DDMMYY) dates
     six_digit_pattern = r"\b(\d{2})(\d{2})(\d{2})\b"
 
     # Check if it's a range (date-date or date - date)
+    sheets_to_update, informal_sheets_to_update = [], []
+    informal_sheet_name = datetime.now().strftime("%b %y")    
     if "-" in date_text:
         # Normalize spaces around "-" and split the range
         start_date, end_date = [d.strip() for d in date_text.split("-")]
@@ -263,49 +303,110 @@ def extract_message(message):
         start_date = re.sub(six_digit_pattern, r"\1/\2/\3", start_date)
         end_date = re.sub(six_digit_pattern, r"\1/\2/\3", end_date)
         date_text = f"{start_date} - {end_date}"
+
+        # Determine AM or PM from both start and end dates
+        start_am, start_pm = "(AM)" in start_date.upper(), "(PM)" in start_date.upper()
+        end_am, end_pm = "(AM)" in end_date.upper(), "(PM)" in end_date.upper()
+
+        # date_text is a range, all sheets need to be updated
+        sheets_to_update.extend(["AM", "PM"])
+        informal_sheets_to_update.extend([f"{informal_sheet_name} (AM)", f"{informal_sheet_name} (PM)"])        
     else:
         # Convert single date
         date_text = re.sub(six_digit_pattern, r"\1/\2/\3", date_text)
+        if "(AM)" in raw_status.upper():
+            date_text += " (AM)"
+        if "(PM)" in raw_status.upper():
+            date_text += " (PM)"
 
-    if "(AM)" in date_text.upper() or "(AM)" in raw_status:
-        period = "AM"
-    elif "(PM)" in date_text.upper() or "(AM)" in raw_status:
-        period = "PM"
+        # Determine AM or PM
+        start_am, start_pm = "(AM)" in date_text.upper(), "(PM)" in date_text.upper()
+        end_am, end_pm = False, False
 
-    # Determine sheets to update
-    sheets_to_update = []
-    if period == "AM":
-        sheets_to_update.append("AM")
-    elif period == "PM":
-        sheets_to_update.append("PM")
-    else:
-        sheets_to_update.extend(["AM", "PM"])  # If no period specified, update both
+        # Determine sheets to update
+        if start_am or end_am:
+            sheets_to_update.append("AM")
+            informal_sheets_to_update.append(f"{informal_sheet_name} (AM)")
+        if start_pm or end_pm:
+            sheets_to_update.append("PM")
+            informal_sheets_to_update.append(f"{informal_sheet_name} (PM)")
+        if len(sheets_to_update) == 0:
+            sheets_to_update.extend(["AM", "PM"])
+            informal_sheets_to_update.extend([f"{informal_sheet_name} (AM)", f"{informal_sheet_name} (PM)"])
 
     # Night sheet updates only for specific statuses
-    if status in ["DUTY", "CSE", "AO", "LEAVE", "OFF", "MC"] and period != "AM":
+    if status in ["DUTY", "CSE", "AO", "LEAVE", "OFF", "MC"] and len(sheets_to_update) == 2:
         sheets_to_update.append("NIGHT")
 
-    # Extract Reason (if exists)
-    reason_match = re.search(r"Reasons?\s*:?\s*(.+)", message, re.IGNORECASE)
-    reason = reason_match.group(1).strip() if reason_match else ""
+    # Extract Location and Reason (if provided separately)
+    location, reason = "", ""
+    for line in lines:
+        location_match = re.match(r"Locations?\s*:?\s*(.*)", line, re.IGNORECASE)
+        if location_match:
+            location = location_match.group(1).strip()
 
-    # Extract Location (if provided separately)
-    location_match = re.search(r"Locations?\s*:?\s*(.+)", message, re.IGNORECASE)
-    if location_match:
-        location = location_match.group(1).strip()
+        reason_match = re.match(r"Reasons?\s*:?\s*(.*)", line, re.IGNORECASE)
+        if reason_match:
+            reason = reason_match.group(1).strip()
 
     # Output extracted values
+    # print("Extracted Raw Status:", raw_status)
     print("Extracted Status:", status)
-    print("Extracted Location:", location)
+    print("Extracted Informal Status:", informal_status)
     print("Extracted Names:", names)
     print("Extracted Date:", date_text)
+    print("Extracted Location:", location)
     print("Extracted Reason:", reason)
     print("Sheets to update:", sheets_to_update)
-    return status, location, names, date_text, reason, sheets_to_update
+    print("Informal Sheets to update:", informal_sheets_to_update)
+    return {
+        "status": status,
+        "informal_status": informal_status,
+        "names": names,
+        "date_text": date_text,
+        "location": location,
+        "reason": reason,
+        "sheets_to_update": sheets_to_update,
+        "informal_sheets_to_update": informal_sheets_to_update
+    }
+
+def extract_days(date_text):
+    # Regex pattern to match date format and extract the day (the first two digits)
+    day_pattern = r'(\d{2})/\d{2}/\d{2}'    # Only extracts the day (\d{2})
+
+    # Search for all matches of the day pattern
+    days = re.findall(day_pattern, date_text)
+
+    if len(days) == 1:
+        # If there is only one day, return that day
+        return days
+    elif len(days) == 2:
+        # If there are two dates, generate the range of days
+        start_day = int(days[0])
+        end_day = int(days[1])
+        
+        # Generate all days within the range
+        day_list = []
+        current_day = start_day
+        while current_day <= end_day:
+            day_list.append(str(current_day))   # Append the day as a string
+            current_day += 1                   # Increment by one day
+        return day_list
+    else:
+        # In case of an unexpected format, return empty list
+        return []
+
+def get_column_letter(index):
+    # Convert a 0-based column index to Excel-style column letters.
+    letters = ""
+    while index >= 0:
+        letters = chr(index % 26 + 65) + letters
+        index = index // 26 - 1
+    return letters
 
 # Step 7: Update Google Sheets for each sheet
 def update_sheet(status, location, names, date_text, reason, sheets_to_update):
-    success = True
+    success, message = True, ""
 
     for sheet_name in sheets_to_update:
         worksheet = sheet.worksheet(sheet_name)
@@ -335,7 +436,9 @@ def update_sheet(status, location, names, date_text, reason, sheets_to_update):
 
             if not matching_rows or status == "Invalid":
                 success = False
-                print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'" if not matching_rows else f"⚠️ Error: Status {status} for {name} is not valid.")
+                msg = f"⚠️ No matching name found in {sheet_name} sheet for '{name}'" if not matching_rows else f"⚠️ Error: Status {status} for {name} is not valid."
+                print(msg)
+                message += f"{msg}\n"
                 continue
 
             row_index = matching_rows[0] + 3  # Adjusting for header rows
@@ -350,8 +453,9 @@ def update_sheet(status, location, names, date_text, reason, sheets_to_update):
 
             # for cell, value in updates:
             #     worksheet.update(range_name=cell, values=value)
-
-            print(f"✅ Qued update for {name}'s record in {sheet_name} sheet (Row {row_index})")
+            msg = f"✅ Qued update for {name}'s record in {sheet_name} sheet (Row {row_index})"
+            print(msg)
+            message += f"{msg}\n"
 
         # Batch update if any
         if updates:
@@ -360,12 +464,159 @@ def update_sheet(status, location, names, date_text, reason, sheets_to_update):
                 print(f"✅ Successfully updated {sheet_name} sheet.")
             except Exception as e:
                 success = False
-                print(f"⚠️ Error during batch update in {sheet_name}: {e}")
+                msg = f"⚠️ Error during batch update in {sheet_name}: {e}"
+                print(msg)
+                message += f"{msg}\n"
 
     if success:
-        print("✅ All updates completed!")
+        msg = "✅ All updates completed!"
+
     else:
-        print("⚠️ Error: Check logs for issue...")
+        msg = "⚠️ Error: Check logs for issue..."
+    print(msg)
+    message += f"{msg}\n"
+    send_telegram_message(message)
+    return success
+
+def update_informal_sheet(informal_status, names, date_text, informal_sheets_to_update):
+    success, message = True, ""
+
+    for sheet_name in informal_sheets_to_update:
+        worksheet = informal_sheet.worksheet(sheet_name)
+        data = worksheet.get_all_values()
+        headers = data[1]  # Use second row as headers
+        df = pd.DataFrame(data[2:], columns=headers)  # Data starts from the third row
+        print(f"Accessing sheet: '{sheet_name}'")
+
+        # Normalize headers by stripping leading/trailing whitespace
+        formatted_headers = [header.strip() for header in headers]
+
+        # Check if the date is a range
+        if "-" in date_text:
+            # Normalize spaces around "-" and split the range
+            start_date, end_date = [d.strip() for d in date_text.split("-")]
+
+            # Determine AM or PM from both start and end dates
+            start_am, start_pm = "(AM)" in start_date.upper(), "(PM)" in start_date.upper()
+            end_am, end_pm = "(AM)" in end_date.upper(), "(PM)" in end_date.upper()
+        else:            
+            # Determine AM or PM
+            start_am, start_pm = "(AM)" in date_text.upper(), "(PM)" in date_text.upper()
+            end_am, end_pm = False, False
+        
+        # Collect all updates in a batch
+        updates = []
+
+        # # Update each person's record
+        # for name in names:
+        #     # Split the name into parts (tokens)
+        #     name_parts = name.split()
+
+        #     # Attempt to match each part of the name against the Excel sheet
+        #     for part in name_parts:
+        #         print(part)
+        #         matching_rows = df[df["Name"].str.contains(part, case=False, na=False)].index.tolist()
+
+        #         # Check if there's exactly one match (to confidently identify the person)
+        #         if len(matching_rows) == 1:
+        #             print(f"✅ Match found: '{name}' matched with row index {matching_rows[0] + 3}")
+        #             break
+        #         elif len(matching_rows) == 0:
+        #             print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'")
+        #         else:
+        #             # Ambiguous matches (multiple rows match the name tokens)
+        #             print(f"⚠️ Multiple matches found for '{part}' in {sheet_name} sheet: {matching_rows}")
+
+        #     if not matching_rows or informal_status == "Invalid":
+        #         success = False
+        #         print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'" if not matching_rows else f"⚠️ Error: Status {informal_status} for {name} is not valid.")
+        #         continue
+
+        # Update each person's record
+        for name in names:
+            # Perform fuzzy matching against all names in the "Name" column
+            choices = df["Name"].tolist()
+            # Format names
+            choices = df["Name"].str.strip().str.lower().tolist()
+            formatted_name = name.strip().lower()
+            # print(f"Choices: {choices}")
+            best_match, score, row_index = process.extractOne(formatted_name, choices, scorer=fuzz.partial_ratio)
+
+            # Set a threshold for matching
+            if score >= 50:  # Adjust threshold as needed
+                print(f"✅ Match found: '{name}' matched with '{best_match}' (Score: {score})")
+                matching_rows = [df.index[row_index]]  # Get the matched row index
+            else:
+                success = False
+                msg = f"⚠️ No suitable match found in {sheet_name} sheet for '{name}'"
+                print(msg)
+                message += f"{msg}\n"
+                continue
+
+            if not matching_rows or informal_status == "Invalid":
+                success = False
+                msg = f"⚠️ No matching name found in {sheet_name} sheet for '{name}'" if not matching_rows else f"⚠️ Error: Status {informal_status} for {name} is not valid."
+                print(msg)
+                message += f"{msg}\n"
+                continue
+
+            row_index = matching_rows[0] + 3  # Adjusting for header rows
+            
+            # Extract the days in the date range
+            days = extract_days(date_text)
+            # Iterate through the days and add updates for each day
+            for day in days:
+                tdy = datetime(datetime.now().year, datetime.now().month, int(day))
+                weekday = tdy.weekday()  # Monday = 0, Sunday = 6
+
+                if weekday == 5 or weekday == 6:  # Saturday or Sunday
+                    print(f"📅 Day {day} is a weekend, skipping update.")
+                    continue
+                elif len(informal_sheets_to_update) == 2 and sheet_name == informal_sheets_to_update[0] and day == days[0] and start_pm:
+                    print(f"📅 Status starts at 'PM' for {day}, skipping 'AM'...")
+                    continue
+                elif len(informal_sheets_to_update) == 2 and sheet_name == informal_sheets_to_update[-1] and day == days[-1] and end_am:
+                    print(f"📅 Status ends at 'AM' for {day}, skipping 'PM'...")
+                    continue
+                # else:
+                #     print(f"📅 Day {day} is a weekday, processing...")
+
+                try:
+                    date_col = get_column_letter(formatted_headers.index(day)) # Index of day column
+                except ValueError:
+                    success = False
+                    msg = f"⚠️ Error: Column for day '{day}' not found in {sheet_name} sheet."
+                    print(msg)
+                    message += f"{msg}\n" 
+                    continue
+                
+                # Update the Google Sheet
+                updates.extend([
+                    {"range": f"{date_col}{row_index}", "values": [[informal_status]]},
+                ])
+            msg = f"✅ Qued update '{informal_status}' for {name}'s record in {sheet_name} sheet (Row {row_index})"
+            print(msg)
+            message += f"{msg}\n"
+        # Batch update if any
+        if updates:
+            try:
+                worksheet.batch_update(updates)
+                print(f"✅ Successfully updated {sheet_name} sheet.")
+            except Exception as e:
+                success = False
+                msg = f"⚠️ Error during batch update in {sheet_name}: {e}"
+                print(msg)
+                message += f"{msg}\n"
+
+    if success:
+        msg = "✅ All updates completed!"
+        print(msg)
+        message += f"{msg}\n"
+    else:
+        msg = "⚠️ Error: Check logs for issue..."
+        print(msg)
+        message += f"{msg}\n"
+    send_telegram_message(message)
     return success
 
 # Step 8: Check for expired status
@@ -448,14 +699,15 @@ async def check_and_update_status():
     # Changes stay out to stay in for those needed
     if stay_in_names:
         update_sheet("P - STAY IN SGC 377", "", stay_in_names, "", "", ["NIGHT"])
-    
-    print(f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time}") # Debugging
-    message += f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time.strftime('%d/%m/%y')}"
+    msg = f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time.strftime('%d/%m/%y')}"
+    print(msg) # Debugging
+    message += msg
     return message
 
 # Step 9: Run the checks everyday
 def run_asyncio_task():
-    asyncio.run(check_and_update_status())
+    message = asyncio.run(check_and_update_status())
+    send_telegram_message(message)
 
 # Function to start the scheduler
 scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust timezone
