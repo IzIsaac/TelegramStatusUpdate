@@ -486,7 +486,6 @@ async def update_sheet(status, location, names, date_text, reason, sheets_to_upd
 
     if success:
         msg = "✅ All updates completed!"
-
     else:
         msg = "⚠️ Error: Check logs for issue..."
     print(msg)
@@ -703,7 +702,7 @@ scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust ti
 async def start_scheduler():
     print("Starting scheduler...")
     # scheduler.add_job(lambda: asyncio.create_task(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
-    scheduler.add_job(run_asyncio_task, "cron", hour=22, minute=40, misfire_grace_time=60)
+    scheduler.add_job(run_asyncio_task, "cron", hour=22, minute=45, misfire_grace_time=60)
     scheduler.start()
 
     # Ensure job is added before accessing it
