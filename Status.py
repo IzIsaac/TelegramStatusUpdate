@@ -6,7 +6,6 @@ from telegram.ext._contexttypes import ContextTypes
 from contextlib import asynccontextmanager
 from google.oauth2.service_account import Credentials
 from fastapi import FastAPI, Request, Response
-from rapidfuzz import process, fuzz
 from dotenv import load_dotenv
 from http import HTTPStatus
 import pandas as pd
