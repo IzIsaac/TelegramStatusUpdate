@@ -679,7 +679,7 @@ async def check_and_update_status():
                 continue
         await send_telegram_message(message)
         message = ""
-        
+
         # Update each sheet in batches
         # Combine name list for one batch update
         names += stay_in_names
@@ -693,7 +693,7 @@ async def check_and_update_status():
     print(msg) # Debugging
     await send_telegram_message(msg)
 
-# Step 9: Run the checks everyday
+# Step 9: Run the checks everyday (Cannot be asnyc)
 def run_asyncio_task():
     asyncio.run(check_and_update_status())
 
