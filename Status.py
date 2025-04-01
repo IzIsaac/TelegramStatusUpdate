@@ -380,7 +380,7 @@ def extract_days(date_text):
 
     if len(days) == 1:
         # If there is only one day, return that day
-        return days
+        return [str(int(days[0]))]
     elif len(days) == 2:
         # If there are two dates, generate the range of days
         start_day = int(days[0])
