@@ -687,22 +687,23 @@ async def check_and_update_status():
     # Changes stay out to stay in for those needed
     if stay_in_names:
         await update_sheet("P - STAY IN SGC 377", "", stay_in_names, "", "", ["NIGHT"])
+
     msg = f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time.strftime('%d/%m/%y')}"
     print(msg) # Debugging
     message += msg
     return message
 
 # Step 9: Run the checks everyday
-def run_asyncio_task():
+async def run_asyncio_task():
     message = asyncio.run(check_and_update_status())
-    send_telegram_message(message)
+    await send_telegram_message(message)
 
 # Function to start the scheduler
 scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust timezone
 async def start_scheduler():
     print("Starting scheduler...")
     # scheduler.add_job(lambda: asyncio.create_task(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
-    scheduler.add_job(run_asyncio_task, "cron", hour=22, minute=30, misfire_grace_time=60)
+    scheduler.add_job(run_asyncio_task, "cron", hour=22, minute=40, misfire_grace_time=60)
     scheduler.start()
 
     # Ensure job is added before accessing it
