@@ -667,7 +667,7 @@ async def check_and_update_status():
                 # print(end_date)
 
                 # Compare end_date to tomorrows's date
-                if end_date <= tomorrow:
+                if end_date < tomorrow:
                     print(f"🚨 Expired status: {name}")
                     message += (f"🚨 Expired status: {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
                     if name in stay_in_ppl:
@@ -701,7 +701,7 @@ scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust ti
 async def start_scheduler():
     print("Starting scheduler...")
     # scheduler.add_job(lambda: asyncio.create_task(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
-    scheduler.add_job(run_asyncio_task, "cron", hour=22, minute=50, misfire_grace_time=60)
+    scheduler.add_job(run_asyncio_task, "cron", hour=22, minute=30, misfire_grace_time=60)
     scheduler.start()
 
     # Ensure job is added before accessing it
