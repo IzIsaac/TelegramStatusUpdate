@@ -677,7 +677,9 @@ async def check_and_update_status():
             except ValueError: # Skip invalid dates
                 print(f"⚠️ Invalid date format for {name}: '{date_range}'")
                 continue
-
+        await send_telegram_message(message)
+        message = ""
+        
         # Update each sheet in batches
         # Combine name list for one batch update
         names += stay_in_names
@@ -687,10 +689,9 @@ async def check_and_update_status():
     if stay_in_names:
         await update_sheet("P - STAY IN SGC 377", "", stay_in_names, "", "", ["NIGHT"])
 
-    msg = f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time.strftime('%d/%m/%y')}"
+    msg = f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time.strftime('%d/%m/%y %H:%M:%S')}"
     print(msg) # Debugging
-    message += msg
-    await send_telegram_message(message)
+    await send_telegram_message(msg)
 
 # Step 9: Run the checks everyday
 def run_asyncio_task():
