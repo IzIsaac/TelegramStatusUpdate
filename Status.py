@@ -52,9 +52,11 @@ else:
 
 # Step 3: Open Google Sheet
 google_sheets_url = os.getenv("google_sheets_url")
-sheet = client.open_by_url(google_sheets_url)
-informal_google_sheets_url = os.getenv("informal_google_sheets_url")
-informal_sheet = client.open_by_url(informal_google_sheets_url)
+real_google_sheets_url = os.getenv("real_google_sheets_url")
+sheet = client.open_by_url(real_google_sheets_url)
+informal_google_sheets_url = os.getenv("informal_google_sheet_url")
+real_informal_google_sheets_url = os.getenv("real_informal_google_sheets_url")
+informal_sheet = client.open_by_url(real_informal_google_sheets_url)
 print("✅ Successfully connected to Google Sheets!")
 
 # Step 4: Building the bot
