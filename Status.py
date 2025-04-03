@@ -685,6 +685,8 @@ async def check_and_update_status():
             except ValueError: # Skip invalid dates
                 print(f"⚠️ Invalid date format for {name}: '{date_range}'")
                 continue
+        if not message:
+            message += f"🔎 No expired status found in {sheet}!\n"
         await send_telegram_message(message)
         message = ""
 
