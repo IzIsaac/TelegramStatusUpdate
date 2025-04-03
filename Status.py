@@ -203,6 +203,8 @@ official_status_mapping = {
     "CSE": "CSE",
     "COURSE": "CSE",
     "AO": "AO",
+    "OL": "LEAVE",
+    "OVERSEAS": "LEAVE",
     "LEAVE": "LEAVE",
     "OFF": "OFF",
     "RSI": "RSI/RSO",
@@ -341,7 +343,7 @@ def extract_message(message):
         sheets_to_update.append("NIGHT")
 
     # Extract Location and Reason (if provided separately)
-    reason = ""
+    reason = "" # Location already has a check
     for line in lines:
         location_match = re.match(r"Locations?\s*:?\s*(.*)", line, re.IGNORECASE)
         if location_match:
