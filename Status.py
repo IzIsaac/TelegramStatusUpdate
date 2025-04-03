@@ -214,12 +214,15 @@ official_status_mapping = {
 }
 
 informal_status_mapping = {
+    "GD": "GD",
     "DUTY": "GD",
     "UDO": "UDO",
     "CDOS": "CDOS",
+    "GR": "GR",
     "REST": "GR",
     "OUTSTATION": "OS",
-    "BLOOD DONATION": "OS",
+    "BLOOD": "OS",
+    "DONATION": "OS",
     "OS": "OS",
     "CSE": "C",
     "COURSE": "C",
@@ -234,6 +237,7 @@ informal_status_mapping = {
     "MC": "MC",
     "MA": "MA",
     "XWB": "XWB",
+    "XTW": "XTW",
     "PRESENT": "1"
 }
 
