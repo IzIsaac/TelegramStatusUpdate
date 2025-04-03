@@ -51,12 +51,12 @@ else:
     print("❌ Error: Google Sheets credentials not found in environment variables.")
 
 # Step 3: Open Google Sheet
-google_sheets_url = os.getenv("google_sheets_url")
+google_sheets_url = os.getenv("google_sheets_url") # AI Sheet
 real_google_sheets_url = os.getenv("real_google_sheets_url")
-sheet = client.open_by_url(real_google_sheets_url)
-informal_google_sheets_url = os.getenv("informal_google_sheet_url")
+sheet = client.open_by_url(real_google_sheets_url) # Change to toggle
+informal_google_sheets_url = os.getenv("informal_google_sheet_url") # AI Sheet
 real_informal_google_sheets_url = os.getenv("real_informal_google_sheets_url")
-informal_sheet = client.open_by_url(real_informal_google_sheets_url)
+informal_sheet = client.open_by_url(real_informal_google_sheets_url) # Change to toggle
 print("✅ Successfully connected to Google Sheets!")
 
 # Step 4: Building the bot
@@ -341,7 +341,7 @@ def extract_message(message):
         sheets_to_update.append("NIGHT")
 
     # Extract Location and Reason (if provided separately)
-    location, reason = "", ""
+    reason = ""
     for line in lines:
         location_match = re.match(r"Locations?\s*:?\s*(.*)", line, re.IGNORECASE)
         if location_match:
