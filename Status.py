@@ -699,7 +699,7 @@ async def check_and_update_status():
 
     msg = f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time.strftime('%d/%m/%y %H:%M:%S')}"
     print(msg) # Debugging
-    await send_telegram_message(msg)
+    return msg
 
 # Step 9: Run the checks everyday (Cannot be asnyc)
 def run_asyncio_task():
