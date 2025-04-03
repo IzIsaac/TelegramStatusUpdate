@@ -428,6 +428,7 @@ async def update_sheet(status, location, names, date_text, reason, sheets_to_upd
         formatted_headers = [header.strip() for header in headers]
         # Column indices
         try:
+            platoon_col = formatted_headers.index("Platoon")
             status_col = formatted_headers.index("Status")
             date_col = formatted_headers.index("Date")
             remarks_col = formatted_headers.index("Remarks")
@@ -448,7 +449,9 @@ async def update_sheet(status, location, names, date_text, reason, sheets_to_upd
             # Attempt to match each part of the name against the Excel sheet
             for part in name_parts:
                 print(part)
-                matching_rows = df[df["Name"].str.contains(part, case=False, na=False)].index.tolist()
+                # matching_rows = df[df["Name"].str.contains(part, case=False, na=False)].index.tolist()
+                matching_rows = df[(df["Name"].str.contains(part, case=False, na=False)) & (df["Platoon"] == "AE")].index.tolist()
+
 
                 # Check if there's exactly one match (to confidently identify the person)
                 if len(matching_rows) == 1:
@@ -460,9 +463,9 @@ async def update_sheet(status, location, names, date_text, reason, sheets_to_upd
                     # Ambiguous matches (multiple rows match the name tokens)
                     print(f"⚠️ Multiple matches found for '{part}' in {sheet_name} sheet: {matching_rows}")
 
-            if not matching_rows or status == "Invalid":
+            if not matching_rows or len(matching_rows) > 1 or status == "Invalid":
                 success = False
-                print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'" if not matching_rows else f"⚠️ Error: Status {status} for {name} is not valid.")
+                print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'" if len(matching_rows) > 1 else f"⚠️ Error: Status {status} for {name} is not valid.")
                 continue
 
             row_index = matching_rows[0] + 3  # Adjusting for header rows
@@ -626,7 +629,7 @@ async def check_and_update_status():
     weekday = tomorrow.weekday()  # Monday = 0, Sunday = 6
     message = ""
     if weekday == 4:  # Friday
-        stay_in_ppl = set()
+        # stay_in_ppl = set()
         print(f"📅 Tomorrow is Friday! Updating all 'STAY IN' statuses to 'P - STAY OUT' for {len(stay_in_ppl)} personel.") # Clear stay-in list so no one stays in
     elif weekday == 5:  # Saturday
         print("📅 Tomorrow is Saturday! No updates needed.")
@@ -659,14 +662,10 @@ async def check_and_update_status():
             if platoon != "AE": # Stops when no longer AE ppl
                 break
             elif not date_range: # Skips ppl with no date
-                if weekday == 4 and current_status == "P - STAY IN SGC 377":
-                    names.append(name)
-                elif name in stay_in_ppl and weekday == 6 and current_status == "P - STAY OUT":
+                if name in stay_in_ppl and (weekday == 6 and current_status == "P - STAY OUT") or (weekday == 4 and current_status == "P - STAY IN SGC 377"):
                     stay_in_names.append(name)
-                else:
-                    continue
-                print(f"🚨 Expired status: {name}")
-                message += (f"🚨 Expired status: {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
+                    print(f"🚨 Expired status: {name}")
+                    message += (f"🚨 Expired status: {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
                 continue
 
             # Formate date for comparison
