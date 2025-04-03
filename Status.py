@@ -661,7 +661,7 @@ async def check_and_update_status():
             elif not date_range: # Skips ppl with no date
                 if name in stay_in_ppl and weekday == 6 and current_status == "P - STAY OUT":
                     stay_in_names.append(name)
-                    print(f"🚨 Expired status: {name}")
+                    print(f"🚨 Expired status: {name}, Stay out")
                     message += (f"🚨 Expired status: {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
                 continue
 
