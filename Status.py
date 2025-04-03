@@ -675,7 +675,7 @@ async def check_and_update_status():
                 # print(end_date)
 
                 # Compare end_date to tomorrows's date
-                if end_date < tomorrow:
+                if end_date.date() < tomorrow.date():
                     print(f"🚨 Expired status: {name}")
                     message += (f"🚨 Expired status: {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
                     if name in stay_in_ppl:
