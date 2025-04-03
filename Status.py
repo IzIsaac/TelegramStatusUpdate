@@ -225,6 +225,7 @@ informal_status_mapping = {
     "COURSE": "C",
     "AO": "AO",
     "ATTACH": "AO",
+    "OL": "OL",
     "OVERSEAS": "OL",
     "LEAVE": "L",
     "OFF": "O",
