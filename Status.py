@@ -659,10 +659,14 @@ async def check_and_update_status():
             if platoon != "AE": # Stops when no longer AE ppl
                 break
             elif not date_range: # Skips ppl with no date
-                if name in stay_in_ppl and weekday == 6 and current_status == "P - STAY OUT":
+                if weekday == 4 and current_status == "P - STAY IN SGC 377":
+                    names.append(name)
+                elif name in stay_in_ppl and weekday == 6 and current_status == "P - STAY OUT":
                     stay_in_names.append(name)
-                    print(f"🚨 Expired status: {name}, Stay out")
-                    message += (f"🚨 Expired status: {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
+                else:
+                    continue
+                print(f"🚨 Expired status: {name}")
+                message += (f"🚨 Expired status: {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
                 continue
 
             # Formate date for comparison
@@ -686,7 +690,7 @@ async def check_and_update_status():
                 print(f"⚠️ Invalid date format for {name}: '{date_range}'")
                 continue
         if not message:
-            message += f"🔎 No expired status found in {sheet}!\n"
+            message += f"🔎 No expired status found in '{sheet_name}'!\n"
         await send_telegram_message(message)
         message = ""
 
@@ -701,7 +705,8 @@ async def check_and_update_status():
 
     msg = f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time.strftime('%d/%m/%y %H:%M:%S')}"
     print(msg) # Debugging
-    return msg
+    await send_telegram_message(msg)
+    return "✅ Status check complete!"
 
 # Step 9: Run the checks everyday (Cannot be asnyc)
 def run_asyncio_task():
