@@ -555,7 +555,7 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
                     # Ambiguous matches (multiple rows match the name tokens)
                     print(f"⚠️ Multiple matches found for '{part}' in {sheet_name} sheet: {matching_rows}")
 
-            if not matching_rows or informal_status == "Invalid":
+            if not matching_rows or len(matching_rows) > 1 or informal_status == "Invalid":
                 success = False
                 print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'" if not matching_rows else f"⚠️ Error: Status {informal_status} for {name} is not valid.")
                 continue
