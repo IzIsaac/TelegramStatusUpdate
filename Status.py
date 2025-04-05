@@ -1,4 +1,5 @@
 from traceback import print_tb
+from numpy import matrix
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 from telegram.constants import ParseMode
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -555,7 +556,8 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
                     # Ambiguous matches (multiple rows match the name tokens)
                     print(f"⚠️ Multiple matches found for '{part}' in {sheet_name} sheet: {matching_rows}")
 
-            if not matching_rows or len(matching_rows) > 1 or informal_status == "Invalid":
+            # if not matching_rows or len(matching_rows) > 1 or informal_status == "Invalid":
+            if not matching_rows or informal_status == "Invalid":
                 success = False
                 print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'" if not matching_rows else f"⚠️ Error: Status {informal_status} for {name} is not valid.")
                 continue
@@ -597,14 +599,16 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
             msg = f"✅ Qued update '{informal_status}' for {name}'s record in {sheet_name} sheet (Row {row_index})"
             print(msg)
             message += f"{msg}\n"
+
+        print("Updating sheets now")  
         # Batch update if any
         if updates:
             try:
                 worksheet.batch_update(updates)
-                print(f"✅ Successfully updated {sheet_name} sheet.")
+                print(f"✅ Successfully updated '{sheet_name}' sheet.")
             except Exception as e:
                 success = False
-                msg = f"⚠️ Error during batch update in {sheet_name}: {e}"
+                msg = f"⚠️ Error during batch update in '{sheet_name}': {e}"
                 print(msg)
                 message += f"{msg}\n"
 
