@@ -147,15 +147,28 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Send multiple messages
-    response = (f"✅ Status Update Recieved\n"
-                    f"📌 Status: {status}\n"
-                    f"📌 Informal Status: {informal_status}\n"
-                    f"📍 Location: {location}\n"
-                    f"👥 Names: {', '.join(names) if names else 'None'}\n"
-                    f"📅 Dates: {date_text}\n"
-                    f"📄 Reason: {reason}\n"
-                    f"📄 Sheets: {sheets_to_update}\n"
-                    f"📄 Informal Sheets: {informal_sheets_to_update}\n")
+    # response = (f"✅ Status Update Recieved\n"
+    #                 f"📌 Status: {status}\n"
+    #                 f"📌 Informal Status: {informal_status}\n"
+    #                 f"📍 Location: {location}\n"
+    #                 f"👥 Names: {', '.join(names) if names else 'None'}\n"
+    #                 f"📅 Dates: {date_text}\n"
+    #                 f"📄 Reason: {reason}\n"
+    #                 f"📄 Sheets: {sheets_to_update}\n"
+    #                 f"📄 Informal Sheets: {informal_sheets_to_update}\n")
+    
+    response = (
+        f"✅ *Status Update Received*\n"
+        f"🪪 *Status:* {status}\n"
+        f"🎭 *Informal Status:* {informal_status}\n"
+        f"📍 *Location:* {location}\n"
+        f"🧑‍🤝‍🧑 *Names:* {', '.join(names) if names else 'None'}\n"
+        f"📅 *Dates:* {date_text}\n"
+        f"📝 *Reason:* {reason}\n"
+        f"📊 *Sheets to Update:* {', '.join(sheets_to_update)}\n"
+        f"📋 *Informal Sheets:* {', '.join(informal_sheets_to_update)}"
+    )
+
     await update.message.reply_text(response, reply_markup=reply_markup, parse_mode="Markdown"), 
 
     # Wait for user to confirm update
@@ -711,7 +724,7 @@ async def check_and_update_status():
     if stay_in_names:
         await update_sheet("P - STAY IN SGC 377", "", stay_in_names, "", "", ["NIGHT"])
 
-    msg = f"✅ Status check complete! \n📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time.strftime('%d/%m/%y %H:%M:%S')}"
+    msg = f"📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time.strftime('%d/%m/%y %H:%M:%S')}"
     print(msg) # Debugging
     await send_telegram_message(msg)
     return "✅ Status check complete!"
