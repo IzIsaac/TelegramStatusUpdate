@@ -54,12 +54,12 @@ else:
 # Step 3: Open Google Sheet
 google_sheets_url = os.getenv("google_sheets_url") # AI Sheet
 real_google_sheets_url = os.getenv("real_google_sheets_url")
-sheet = client.open_by_url(google_sheets_url) # Change to toggle
-# sheet = client.open_by_url(real_google_sheets_url) # Change to toggle
+# sheet = client.open_by_url(google_sheets_url) # Change to toggle
+sheet = client.open_by_url(real_google_sheets_url) # Change to toggle
 informal_google_sheets_url = os.getenv("informal_google_sheets_url") # AI Sheet
 real_informal_google_sheets_url = os.getenv("real_informal_google_sheets_url")
-informal_sheet = client.open_by_url(informal_google_sheets_url) # Change to toggle
-# informal_sheet = client.open_by_url(real_informal_google_sheets_url) # Change to toggle
+# informal_sheet = client.open_by_url(informal_google_sheets_url) # Change to toggle
+informal_sheet = client.open_by_url(real_informal_google_sheets_url) # Change to toggle
 print("✅ Successfully connected to Google Sheets!")
 
 # Step 4: Building the bot
@@ -384,7 +384,7 @@ def extract_message(message):
 
 def extract_days(date_text):
     # Regex pattern to match date format and extract the day (the first two digits)
-    day_pattern = r'(\d{2})/\d{2}/\d{2}'    # Only extracts the day (\d{2})
+    day_pattern = r'(\d{1,2})/\d{2}/\d{2}'    # Only extracts the day (\d{2})
 
     # Search for all matches of the day pattern
     days = re.findall(day_pattern, date_text)
@@ -416,6 +416,55 @@ def get_column_letter(index):
         index = index // 26 - 1
     return letters
 
+def find_name_index(df, name, sheet_name, official):
+    if official:
+        matching_rows = df[(df["Name"].str.contains(name, case=False, na=False)) & (df["Platoon"] == "AE")].index.tolist()
+    else:
+        matching_rows = df[df["Name"].str.contains(name, case=False, na=False)].index.tolist()
+    
+    # 1. Direct Substring Match
+    if len(matching_rows) == 1:
+        row_index = matching_rows[0] + 3  # Adjusting for header rows
+        print(f"✅ Direct match found: '{name}' matched with row index {row_index}")
+        return row_index
+
+    # 2. Name Part Match
+    name_parts = name.split()
+    part_matches = []  # Store all rows that match name parts
+    for part in name_parts:
+        # print(part)
+        if official:
+            partial_matching_rows = df[(df["Name"].str.contains(part, case=False, na=False)) & (df["Platoon"] == "AE")].index.tolist()
+        else:
+            partial_matching_rows = df[df["Name"].str.contains(part, case=False, na=False)].index.tolist()
+        part_matches.extend(partial_matching_rows)
+
+        if len(partial_matching_rows) == 1:  # Found an exact match for a part
+            print(f"✅ Part match found: '{part}' matched with row index {partial_matching_rows[0] + 3}")
+            row_index = partial_matching_rows[0] + 3  # Adjusting for header rows
+            return row_index
+        elif len(partial_matching_rows) == 0:
+            print(f"⚠️ No matching name found for '{part}' in '{sheet_name}' sheet.")
+        else:
+            print(f"⚠️ Multiple matches found for '{part}' in '{sheet_name}' sheet: {partial_matching_rows}.")
+
+    # 3. Most Common Row Saved
+    if part_matches:
+        # Count occurrences of each row index
+        row_count = {}
+        for index in part_matches:
+            row_count[index] = row_count.get(index, 0) + 1
+
+        # Select the row index with the highest count
+        most_common_row = max(row_count, key=row_count.get)
+        row_index = most_common_row + 3  # Adjusting for header rows
+        print(f"✅ Most common match found for '{name}' in row: {row_index}")
+        return row_index
+
+    # No matches found
+    print(f"⚠️ No valid matches found for '{name}' in '{sheet_name}' sheet.")
+    return None
+
 # Step 7: Update Google Sheets for each sheet
 async def update_sheet(status, location, names, date_text, reason, sheets_to_update):
     success, message = True, ""
@@ -446,33 +495,7 @@ async def update_sheet(status, location, names, date_text, reason, sheets_to_upd
 
         # Update each person's record
         for name in names:
-            # Split the name into parts (tokens)
-            name_parts = name.split()
-
-            # Attempt to match each part of the name against the Excel sheet
-            for part in name_parts:
-                print(part)
-                # matching_rows = df[df["Name"].str.contains(part, case=False, na=False)].index.tolist()
-                matching_rows = df[(df["Name"].str.contains(part, case=False, na=False)) & (df["Platoon"] == "AE")].index.tolist()
-
-
-                # Check if there's exactly one match (to confidently identify the person)
-                if len(matching_rows) == 1:
-                    print(f"✅ Match found: '{name}' matched with row index {matching_rows[0] + 3}")
-                    break
-                elif len(matching_rows) == 0:
-                    print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'")
-                else:
-                    # Ambiguous matches (multiple rows match the name tokens)
-                    print(f"⚠️ Multiple matches found for '{part}' in {sheet_name} sheet: {matching_rows}")
-
-            if not matching_rows or len(matching_rows) > 1 or status == "Invalid":
-                success = False
-                print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'" if len(matching_rows) > 1 else f"⚠️ Error: Status {status} for {name} is not valid.")
-                continue
-
-            row_index = matching_rows[0] + 3  # Adjusting for header rows
-
+            row_index = find_name_index(df, name, sheet_name, official=True)
             # Update the Google Sheet
             updates.extend([
                 {"range": f"{chr(65 + status_col)}{row_index}", "values": [[status]]},
@@ -538,31 +561,7 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
 
         # Update each person's record
         for name in names:
-            # Split the name into parts (tokens)
-            name_parts = name.split()
-
-            # Attempt to match each part of the name against the Excel sheet
-            for part in name_parts:
-                print(part)
-                matching_rows = df[df["Name"].str.contains(part, case=False, na=False)].index.tolist()
-
-                # Check if there's exactly one match (to confidently identify the person)
-                if len(matching_rows) == 1:
-                    print(f"✅ Match found: '{name}' matched with row index {matching_rows[0] + 3}")
-                    break
-                elif len(matching_rows) == 0:
-                    print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'")
-                else:
-                    # Ambiguous matches (multiple rows match the name tokens)
-                    print(f"⚠️ Multiple matches found for '{part}' in {sheet_name} sheet: {matching_rows}")
-
-            # if not matching_rows or len(matching_rows) > 1 or informal_status == "Invalid":
-            if not matching_rows or informal_status == "Invalid":
-                success = False
-                print(f"⚠️ No matching name found in {sheet_name} sheet for '{name}'" if not matching_rows else f"⚠️ Error: Status {informal_status} for {name} is not valid.")
-                continue
-
-            row_index = matching_rows[0] + 3  # Adjusting for header rows
+            row_index = find_name_index(df, name, sheet_name, official=False)
             
             # Extract the days in the date range
             days = extract_days(date_text)
@@ -591,7 +590,7 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
                     print(msg)
                     message += f"{msg}\n" 
                     continue
-                print(f"Date column: {date_col}")
+                
                 # Update the Google Sheet
                 updates.extend([
                     {"range": f"{date_col}{row_index}", "values": [[informal_status]]},
