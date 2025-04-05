@@ -53,10 +53,12 @@ else:
 # Step 3: Open Google Sheet
 google_sheets_url = os.getenv("google_sheets_url") # AI Sheet
 real_google_sheets_url = os.getenv("real_google_sheets_url")
-sheet = client.open_by_url(real_google_sheets_url) # Change to toggle
+sheet = client.open_by_url(google_sheets_url) # Change to toggle
+# sheet = client.open_by_url(real_google_sheets_url) # Change to toggle
 informal_google_sheets_url = os.getenv("informal_google_sheet_url") # AI Sheet
 real_informal_google_sheets_url = os.getenv("real_informal_google_sheets_url")
-informal_sheet = client.open_by_url(real_informal_google_sheets_url) # Change to toggle
+informal_sheet = client.open_by_url(informal_google_sheets_url) # Change to toggle
+# informal_sheet = client.open_by_url(real_informal_google_sheets_url) # Change to toggle
 print("✅ Successfully connected to Google Sheets!")
 
 # Step 4: Building the bot
@@ -207,8 +209,8 @@ official_status_mapping = {
     "OVERSEAS": "LEAVE",
     "LEAVE": "LEAVE",
     "OFF": "OFF",
-    "RSI": "RSI/RSO",
-    "RSO": "RSI/RSO",
+    "RSI": "RSI/ RSO",
+    "RSO": "RSI/ RSO",
     "MC": "MC",
     "MA": "MA"
 }
@@ -636,14 +638,16 @@ async def check_and_update_status():
         return None # Exit function, skipping updates
     elif weekday == 6:  # Sunday
         sheets = ["NIGHT"] # Only update NIGHT sheet
-        print("📅 Tomorrow is Sunday! Updating NIGHT sheet only.")
+        print("📅 Tomorrow is Sunday! Updating NIGHT sheet only.\nUpdating all stay in personel's status to 'P - STAY IN'.")
     else:
         print("📅 Tomorrow is a weekday.")
     print(f"Checking statuses for {tmr}...")
     message += f"Checking statuses for {tmr}...\n"
 
     for sheet_name in sheets:
-        print(f"🔎 Accessing worksheet: '{sheet_name}'")
+        msg = f"🔎 Accessing worksheet: '{sheet_name}'"
+        print(msg)
+        message += f"{msg}\n"
         names, stay_in_names = [], []
         worksheet = sheet.worksheet(sheet_name)
         data = worksheet.get_all_values()
@@ -662,17 +666,20 @@ async def check_and_update_status():
             if platoon != "AE": # Stops when no longer AE ppl
                 break
             elif not date_range: # Skips ppl with no date
-                if name in stay_in_ppl and (weekday == 6 and current_status == "P - STAY OUT") or (weekday == 4 and current_status == "P - STAY IN SGC 377"):
+                if weekday == 4 and current_status == "P - STAY IN SGC 377":
+                    names.append(name)
+                elif name in stay_in_ppl and weekday == 6 and current_status == "P - STAY OUT":
                     stay_in_names.append(name)
-                    print(f"🚨 Expired status: {name}")
-                    message += (f"🚨 Expired status: {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
+                else:
+                    continue
+                print(f"🚨 Expired status: {name}")
+                message += (f"🚨 Expired status: {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
                 continue
 
             # Formate date for comparison
             date_range = date_range.replace("(AM)", "").replace("(PM)", "").strip()
             # print(date_range)
             try:
-                # end_date = datetime.strptime(date_range.split("-")[-1].strip(), "%d/%m/%y")
                 date_parts = date_range.split("-")
                 end_date = datetime.strptime(date_parts[-1].strip(), "%d/%m/%y") if len(date_parts) > 1 else datetime.strptime(date_parts[0].strip(), "%d/%m/%y")
                 # print(end_date)
