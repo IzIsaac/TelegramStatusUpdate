@@ -163,7 +163,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🎭 *Informal Status:* {informal_status}\n"
         f"📍 *Location:* {location}\n"
         f"🧑‍🤝‍🧑 *Names:* {', '.join(names) if names else 'None'}\n"
-        f"📅 *Dates:* {date_text}\n"
+        f"🗓️ *Dates:* {date_text}\n"
         f"📝 *Reason:* {reason}\n"
         f"📊 *Sheets to Update:* {', '.join(sheets_to_update)}\n"
         f"📋 *Informal Sheets:* {', '.join(informal_sheets_to_update)}"
