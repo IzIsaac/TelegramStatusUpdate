@@ -591,7 +591,7 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
                     print(msg)
                     message += f"{msg}\n" 
                     continue
-                
+                print(f"Date column: {date_col}")
                 # Update the Google Sheet
                 updates.extend([
                     {"range": f"{date_col}{row_index}", "values": [[informal_status]]},
@@ -599,13 +599,7 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
             msg = f"✅ Qued update '{informal_status}' for {name}'s record in {sheet_name} sheet (Row {row_index})"
             print(msg)
             message += f"{msg}\n"
-        
 
-        print(f"Updating sheets now")  
-        if updates:
-            print(f"Are there updates: {True}")
-        else:
-            print(f"Are there updates: {False}")
         # Batch update if any
         if updates:
             try:
