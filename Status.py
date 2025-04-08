@@ -2,7 +2,7 @@ from traceback import print_tb
 from numpy import matrix
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 from telegram.constants import ParseMode
-from telegram import ChatInviteLink, InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext._contexttypes import ContextTypes
 from contextlib import asynccontextmanager
 from google.oauth2.service_account import Credentials
@@ -25,7 +25,8 @@ load_dotenv()
 # Telegram Bot Token
 TELEGRAM_TOKEN = os.getenv('Telegram_Token')
 CHAT_ID = os.getenv('Chat_ID')
-chat_id = CHAT_ID
+GROUP_CHAT_ID = os.getenv('Group_Chat_ID')
+chat_id = CHAT_ID # Default
 # print("Telegram Token: ", os.getenv('Telegram_Token'))
 if not TELEGRAM_TOKEN:
     raise ValueError("Telegram Token is missing from the environment variables!")
@@ -72,11 +73,13 @@ ptb = (
     .build()
 )
 
-# Send message when bot starts
+# Send message when bot starts (Both chats)
 async def send_startup_message():
     # Replace with the chat ID where you want to send the message
     chat_id = CHAT_ID  # Can be your own chat ID or a group chat ID
+    group_chat_id = GROUP_CHAT_ID
     await ptb.bot.send_message(chat_id, "Startup complete!")
+    await ptb.bot.send_message(group_chat_id, "Startup complete!")
     asyncio.create_task(start_scheduler())
     print("✅ Scheduler started")
 
@@ -88,23 +91,20 @@ ptb.add_handler(CommandHandler("start", start))
 # /id Get chat id
 async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Reply with the user's chat ID
-    chat_id = update.message.chat_id
+    chat_id = update.message.chat.id
     await update.message.reply_text(f"Your chat ID is: {chat_id}")
 ptb.add_handler(CommandHandler("id", get_chat_id))
 
 # /check Manually run status check
 async def check_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
     # telegram_message = await ptb.bot.send_message(chat_id=CHAT_ID, text="🔄 Checking status...")
     telegram_message = await ptb.bot.send_message(chat_id=chat_id, text="🔄 Checking status...")
-
     message = await check_and_update_status()
     await telegram_message.edit_text(message)
 ptb.add_handler(CommandHandler("check", check_status))
 
 # Function for other functions to send Telegram message
-async def send_telegram_message(message: str):
-    # await ptb.bot.send_message(chat_id=CHAT_ID, text=message)
+async def send_telegram_message(message: str, chat_id: int):
     await ptb.bot.send_message(chat_id=chat_id, text=message)
 
 @asynccontextmanager
@@ -134,6 +134,7 @@ async def process_update(request: Request):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.message.text.strip()
     sender = update.message.from_user.id
+    chat_id = update.message.chat.id
  
     print(f"📩 New message from {sender}: \n{message}") # Debugging
 
@@ -158,7 +159,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     #                 f"👥🧑‍🤝‍🧑 Names: {', '.join(names) if names else 'None'}\n"
     #                 f"📅🗓️ Dates: {date_text}\n"
     #                 f"📄 Reason: {reason}\n"
-    #                 f"📄 Sheets: {sheets_to_update}\n"
+    #                 f"📄📊 Sheets: {sheets_to_update}\n"
     #                 f"📄 Informal Sheets: {informal_sheets_to_update}\n")
     
     response = (
@@ -544,7 +545,7 @@ async def update_sheet(status, location, names, date_text, reason, sheets_to_upd
         msg = "⚠️ Error: Check logs for issue..."
     print(msg)
     message += f"{msg}\n"
-    await send_telegram_message(message)
+    await send_telegram_message(message, chat_id=chat_id)
     return success
 
 async def update_informal_sheet(informal_status, names, date_text, informal_sheets_to_update):
@@ -635,7 +636,7 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
         msg = "⚠️ Error: Check logs for issue..."
         print(msg)
         message += f"{msg}\n"
-    await send_telegram_message(message)
+    await send_telegram_message(message, chat_id=chat_id)
     return success
 
 # Step 8: Check for expired status
@@ -716,7 +717,7 @@ async def check_and_update_status():
                 continue
         if not message:
             message += f"🔎 No expired status found in '{sheet_name}'!\n"
-        await send_telegram_message(message)
+        await send_telegram_message(message, chat_id=chat_id)
         message = ""
 
         # Update each sheet in batches
@@ -730,7 +731,7 @@ async def check_and_update_status():
 
     msg = f"📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time.strftime('%d/%m/%y %H:%M:%S')}"
     print(msg) # Debugging
-    await send_telegram_message(msg)
+    await send_telegram_message(msg, chat_id=chat_id)
     return "✅ Status check complete!"
 
 # Step 9: Run the checks everyday (Cannot be asnyc)
@@ -752,6 +753,7 @@ async def start_scheduler():
     if jobs and jobs[0].next_run_time:
         next_run_message = f"📅 Next status check will run at: {jobs[0].next_run_time.strftime('%d/%m/%y %H:%M:%S')}"
         print(next_run_message)
-        await send_telegram_message(next_run_message)
+        await send_telegram_message(next_run_message, chat_id=CHAT_ID)
+        await send_telegram_message(next_run_message, chat_id=GROUP_CHAT_ID)
     else:
         print("⚠️ No scheduled jobs or next run time not available.")
