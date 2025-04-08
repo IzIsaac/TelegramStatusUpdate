@@ -128,6 +128,8 @@ async def ping():
 async def process_update(request: Request):
     req = await request.json()
     update = Update.de_json(req, ptb.bot)
+    global chat_id # Declare global variable
+    chat_id = update.message.chat.id
     await ptb.process_update(update)
     return Response(status_code=HTTPStatus.OK)
 
@@ -135,9 +137,6 @@ async def process_update(request: Request):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.message.text.strip()
     sender = update.message.from_user.id
-    global chat_id # Declare global variable
-    chat_id = update.message.chat.id
- 
     print(f"📩 New message from {sender}: \n{message}") # Debugging
 
     # Process the message and extract details
