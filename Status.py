@@ -135,7 +135,7 @@ async def process_update(request: Request):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.message.text.strip()
     sender = update.message.from_user.id
-    global chat_id
+    global chat_id # Declare global variable
     chat_id = update.message.chat.id
  
     print(f"📩 New message from {sender}: \n{message}") # Debugging
@@ -203,8 +203,8 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
     
     # Update excel sheet
-    complete = await update_sheet(status, location, names, date_text, reason, sheets_to_update)
-    success = await update_informal_sheet(informal_status, names, date_text, informal_sheets_to_update)
+    complete = await update_sheet(status, location, names, date_text, reason, sheets_to_update, chat_id)
+    success = await update_informal_sheet(informal_status, names, date_text, informal_sheets_to_update, chat_id)
     if complete and success:
         await loading.edit_text("✅ All updates completed!")
     else:
@@ -486,7 +486,7 @@ def find_name_index(df, name, sheet_name, official):
     return None
 
 # Step 7: Update Google Sheets for each sheet
-async def update_sheet(status, location, names, date_text, reason, sheets_to_update):
+async def update_sheet(status, location, names, date_text, reason, sheets_to_update, chat_id):
     success, message = True, ""
 
     for sheet_name in sheets_to_update:
@@ -550,7 +550,7 @@ async def update_sheet(status, location, names, date_text, reason, sheets_to_upd
     await send_telegram_message(message, chat_id=chat_id)
     return success
 
-async def update_informal_sheet(informal_status, names, date_text, informal_sheets_to_update):
+async def update_informal_sheet(informal_status, names, date_text, informal_sheets_to_update, chat_id):
     success, message = True, ""
 
     for sheet_name in informal_sheets_to_update:
