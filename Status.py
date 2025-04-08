@@ -1,4 +1,5 @@
 from traceback import print_tb
+from click import Context
 from numpy import matrix
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 from telegram.constants import ParseMode
@@ -26,7 +27,7 @@ load_dotenv()
 TELEGRAM_TOKEN = os.getenv('Telegram_Token')
 CHAT_ID = os.getenv('Chat_ID')
 GROUP_CHAT_ID = os.getenv('Group_Chat_ID')
-chat_id = CHAT_ID # Default
+chat_id = None # Default
 # print("Telegram Token: ", os.getenv('Telegram_Token'))
 if not TELEGRAM_TOKEN:
     raise ValueError("Telegram Token is missing from the environment variables!")
@@ -134,6 +135,7 @@ async def process_update(request: Request):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.message.text.strip()
     sender = update.message.from_user.id
+    global chat_id
     chat_id = update.message.chat.id
  
     print(f"📩 New message from {sender}: \n{message}") # Debugging
