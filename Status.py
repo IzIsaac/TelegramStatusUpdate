@@ -2,7 +2,7 @@ from traceback import print_tb
 from numpy import matrix
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 from telegram.constants import ParseMode
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import ChatInviteLink, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext._contexttypes import ContextTypes
 from contextlib import asynccontextmanager
 from google.oauth2.service_account import Credentials
@@ -25,8 +25,8 @@ load_dotenv()
 # Telegram Bot Token
 TELEGRAM_TOKEN = os.getenv('Telegram_Token')
 CHAT_ID = os.getenv('Chat_ID')
+chat_id = CHAT_ID
 # print("Telegram Token: ", os.getenv('Telegram_Token'))
-
 if not TELEGRAM_TOKEN:
     raise ValueError("Telegram Token is missing from the environment variables!")
 
@@ -94,14 +94,18 @@ ptb.add_handler(CommandHandler("id", get_chat_id))
 
 # /check Manually run status check
 async def check_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    telegram_message = await ptb.bot.send_message(chat_id=CHAT_ID, text="🔄 Checking status...")
+    chat_id = update.effective_chat.id
+    # telegram_message = await ptb.bot.send_message(chat_id=CHAT_ID, text="🔄 Checking status...")
+    telegram_message = await ptb.bot.send_message(chat_id=chat_id, text="🔄 Checking status...")
+
     message = await check_and_update_status()
     await telegram_message.edit_text(message)
 ptb.add_handler(CommandHandler("check", check_status))
 
 # Function for other functions to send Telegram message
 async def send_telegram_message(message: str):
-    await ptb.bot.send_message(chat_id=CHAT_ID, text=message)
+    # await ptb.bot.send_message(chat_id=CHAT_ID, text=message)
+    await ptb.bot.send_message(chat_id=chat_id, text=message)
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
@@ -148,24 +152,24 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Send multiple messages
     # response = (f"✅ Status Update Recieved\n"
-    #                 f"📌 Status: {status}\n"
+    #                 f"📌🪪 Status: {status}\n"
     #                 f"📌 Informal Status: {informal_status}\n"
     #                 f"📍 Location: {location}\n"
-    #                 f"👥 Names: {', '.join(names) if names else 'None'}\n"
-    #                 f"📅 Dates: {date_text}\n"
+    #                 f"👥🧑‍🤝‍🧑 Names: {', '.join(names) if names else 'None'}\n"
+    #                 f"📅🗓️ Dates: {date_text}\n"
     #                 f"📄 Reason: {reason}\n"
     #                 f"📄 Sheets: {sheets_to_update}\n"
     #                 f"📄 Informal Sheets: {informal_sheets_to_update}\n")
     
     response = (
         f"✅ *Status Update Received*\n"
-        f"🪪 *Status:* {status}\n"
+        f"📌 *Status:* {status}\n"
         f"🎭 *Informal Status:* {informal_status}\n"
         f"📍 *Location:* {location}\n"
-        f"🧑‍🤝‍🧑 *Names:* {', '.join(names) if names else 'None'}\n"
-        f"🗓️ *Dates:* {date_text}\n"
+        f"👥 *Names:* {', '.join(names) if names else 'None'}\n"
+        f"📅 *Dates:* {date_text}\n"
         f"📝 *Reason:* {reason}\n"
-        f"📊 *Sheets to Update:* {', '.join(sheets_to_update)}\n"
+        f"📄 *Sheets to Update:* {', '.join(sheets_to_update)}\n"
         f"📋 *Informal Sheets:* {', '.join(informal_sheets_to_update)}"
     )
 
