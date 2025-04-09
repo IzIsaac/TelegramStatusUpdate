@@ -27,7 +27,7 @@ load_dotenv()
 TELEGRAM_TOKEN = os.getenv('Telegram_Token')
 CHAT_ID = os.getenv('Chat_ID')
 GROUP_CHAT_ID = os.getenv('Group_Chat_ID')
-chat_id = None # Default
+chat_id = CHAT_ID # Default
 # print("Telegram Token: ", os.getenv('Telegram_Token'))
 if not TELEGRAM_TOKEN:
     raise ValueError("Telegram Token is missing from the environment variables!")
