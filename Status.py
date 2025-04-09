@@ -133,7 +133,7 @@ async def process_update(request: Request):
     # Validate if update.message exists
     if update.message is not None:
         chat_id = update.message.chat.id
-        print(f"Chat ID updated: {chat_id}")
+        print(f"🔔 Chat ID updated: {chat_id}")
     else:
         print("⚠️ Update does not contain a message. Skipping chat_id update.")
 
@@ -146,7 +146,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     sender = update.message.from_user.id
     # Check if the message starts with "status" and has sufficient length
     if len(message) < 5 or message[0:6].lower() != "status":
-        print("Message received is not a status message, skipping...")
+        print("⏭️ Message received is not a status message, skipping...")
         return None
     print(f"📩 From Chat: {chat_id} | User {sender}: \n{message}") # Debugging
 
@@ -163,16 +163,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Send multiple messages
-    # response = (f"✅ Status Update Recieved\n"
-    #                 f"📌🪪 Status: {status}\n"
-    #                 f"📌 Informal Status: {informal_status}\n"
-    #                 f"📍 Location: {location}\n"
-    #                 f"👥🧑‍🤝‍🧑 Names: {', '.join(names) if names else 'None'}\n"
-    #                 f"📅🗓️ Dates: {date_text}\n"
-    #                 f"📄 Reason: {reason}\n"
-    #                 f"📄📊 Sheets: {sheets_to_update}\n"
-    #                 f"📄 Informal Sheets: {informal_sheets_to_update}\n")
+    # Icons ✅❌⚠️⏭️🔄📩🔔📌🪪📍👥🎭🧑‍🤝‍🧑📅🗓️📝📄📊📋
     
     response = (
         f"✅ *Status Update Received*\n"
@@ -209,7 +200,7 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     status, informal_status, location, names, date_text, reason, sheets_to_update, informal_sheets_to_update = context.user_data.pop('status_data', (None,)*8)
 
     if not status:
-        print("Error: No data found in context.")
+        print("⚠️ Error: No data found in context.")
         return
     
     # Update excel sheet
@@ -347,8 +338,8 @@ def extract_message(message):
         date_text = f"{start_date} - {end_date}"
 
         # Determine AM or PM from both start and end dates
-        start_am, start_pm = "(AM)" in start_date.upper(), "(PM)" in start_date.upper()
-        end_am, end_pm = "(AM)" in end_date.upper(), "(PM)" in end_date.upper()
+        start_am, start_pm = "AM" in start_date.upper(), "PM" in start_date.upper()
+        end_am, end_pm = "AM" in end_date.upper(), "PM" in end_date.upper()
 
         # date_text is a range, all sheets need to be updated
         sheets_to_update.extend(["AM", "PM"])
@@ -356,13 +347,13 @@ def extract_message(message):
     else:
         # Convert single date
         date_text = re.sub(six_digit_pattern, r"\1/\2/\3", date_text)
-        if "(AM)" in raw_status.upper():
+        if "AM" in raw_status.upper():
             date_text += " (AM)"
-        if "(PM)" in raw_status.upper():
+        if "PM" in raw_status.upper():
             date_text += " (PM)"
 
         # Determine AM or PM
-        start_am, start_pm = "(AM)" in date_text.upper(), "(PM)" in date_text.upper()
+        start_am, start_pm = "AM" in date_text.upper(), "PM" in date_text.upper()
         end_am, end_pm = False, False
 
         # Determine sheets to update
@@ -377,7 +368,7 @@ def extract_message(message):
             informal_sheets_to_update.extend([f"{informal_sheet_name} (AM)", f"{informal_sheet_name} (PM)"])
 
     # Night sheet updates only for specific statuses
-    if status in ["DUTY", "CSE", "AO", "LEAVE", "OFF", "MC"] and len(sheets_to_update) == 2:
+    if status in ["DUTY", "CSE", "AO", "LEAVE", "OFF", "MC"] and (len(sheets_to_update) == 2 or sheets_to_update[0] == "PM"):
         sheets_to_update.append("NIGHT")
 
     # Extract Location and Reason (if provided separately)
