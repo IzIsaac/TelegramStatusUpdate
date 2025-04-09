@@ -144,6 +144,9 @@ async def process_update(request: Request):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.message.text.strip()
     sender = update.message.from_user.id
+    if (message[0:5]).lower() != "status":
+        print("Message recived is not a status message, skipping...")
+        return None
     print(f"📩 From Chat: {chat_id} | User {sender}: \n{message}")
  # Debugging
 
