@@ -92,7 +92,7 @@ ptb.add_handler(CommandHandler("start", start))
 # /id Get chat id
 async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Reply with the user's chat ID
-    chat_id = update.message.chat_id
+    chat_id = update.message.chat.active_usernamesid
     await update.message.reply_text(f"Your chat ID is: {chat_id}")
 ptb.add_handler(CommandHandler("id", get_chat_id))
 
@@ -128,8 +128,15 @@ async def ping():
 async def process_update(request: Request):
     req = await request.json()
     update = Update.de_json(req, ptb.bot)
+
     global chat_id # Declare global variable
-    chat_id = update.message.chat_id
+    # Validate if update.message exists
+    if update.message is not None:
+        chat_id = update.message.chat.id
+        print(f"Chat ID updated: {chat_id}")
+    else:
+        print("⚠️ Update does not contain a message. Skipping chat_id update.")
+
     await ptb.process_update(update)
     return Response(status_code=HTTPStatus.OK)
 
