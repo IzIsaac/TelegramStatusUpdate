@@ -92,7 +92,7 @@ ptb.add_handler(CommandHandler("start", start))
 # /id Get chat id
 async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Reply with the user's chat ID
-    chat_id = update.message.chat.id
+    chat_id = update.message.chat_id
     await update.message.reply_text(f"Your chat ID is: {chat_id}")
 ptb.add_handler(CommandHandler("id", get_chat_id))
 
@@ -129,7 +129,7 @@ async def process_update(request: Request):
     req = await request.json()
     update = Update.de_json(req, ptb.bot)
     global chat_id # Declare global variable
-    chat_id = update.message.chat.id
+    chat_id = update.message.chat_id
     await ptb.process_update(update)
     return Response(status_code=HTTPStatus.OK)
 
@@ -137,7 +137,8 @@ async def process_update(request: Request):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.message.text.strip()
     sender = update.message.from_user.id
-    print(f"📩 New message from {sender}: \n{message}") # Debugging
+    print(f"📩 From Chat: {chat_id} | User {sender}: \n{message}")
+ # Debugging
 
     # Process the message and extract details
     data = extract_message(message)
