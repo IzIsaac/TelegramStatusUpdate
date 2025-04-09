@@ -144,11 +144,11 @@ async def process_update(request: Request):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.message.text.strip()
     sender = update.message.from_user.id
-    if (message[0:5]).lower() != "status":
-        print("Message recived is not a status message, skipping...")
+    # Check if the message starts with "status" and has sufficient length
+    if len(message) < 5 or message[0:6].lower() != "status":
+        print("Message received is not a status message, skipping...")
         return None
-    print(f"📩 From Chat: {chat_id} | User {sender}: \n{message}")
- # Debugging
+    print(f"📩 From Chat: {chat_id} | User {sender}: \n{message}") # Debugging
 
     # Process the message and extract details
     data = extract_message(message)
