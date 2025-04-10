@@ -227,6 +227,8 @@ official_status_mapping = {
     "CSE": "CSE",
     "COURSE": "CSE",
     "AO": "AO",
+    "CCL": "LEAVE",
+    "CHILD": "LEAVE",
     "OL": "LEAVE",
     "OVERSEAS": "LEAVE",
     "LEAVE": "LEAVE",
@@ -234,7 +236,10 @@ official_status_mapping = {
     "RSI": "RSI/ RSO",
     "RSO": "RSI/ RSO",
     "MC": "MC",
-    "MA": "MA"
+    "MA": "MA",
+    "C": "CSE",
+    "L": "LEAVE",
+    "O": "OFF"
 }
 
 informal_status_mapping = {
@@ -252,6 +257,8 @@ informal_status_mapping = {
     "COURSE": "C",
     "AO": "AO",
     "ATTACH": "AO",
+    "CCL": "CCL",
+    "CHILD": "CCL",
     "OL": "OL",
     "OVERSEAS": "OL",
     "LEAVE": "L",
@@ -262,6 +269,9 @@ informal_status_mapping = {
     "MA": "MA",
     "XWB": "XWB",
     "XTW": "XTW",
+    "L": "L",
+    "C": "C",
+    "O": "O",
     "PRESENT": "1"
 }
 
