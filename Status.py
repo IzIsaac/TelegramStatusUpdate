@@ -319,48 +319,78 @@ def extract_message(message):
 
     # Extract Dates
     date_match = re.search(r"Dates?\s*:?\s*(.+)", message, re.IGNORECASE)
-    date_text = date_match.group(1).strip() if date_match else ""
+    raw_date_text = date_match.group(1).strip() if date_match else ""
+    # print(f"Raw date text: {raw_date_text}") # Debugging
 
     # Convert date to fixed format (DD/MM/YY)
     # Regular expression for 6-digit (DDMMYY) dates
-    six_digit_pattern = r"\b(\d{2})(\d{2})(\d{2})\b"
+    six_digit_pattern = r"\b(\d{2})[\/]?(\d{2})[\/]?(\d{2})\b"
 
     # Check if it's a range (date-date or date - date)
     sheets_to_update, informal_sheets_to_update = [], []
     informal_sheet_name = datetime.now().strftime("%b %y")    
-    if "-" in date_text:
+    if "-" in raw_date_text:
         # Normalize spaces around "-" and split the range
-        start_date, end_date = [d.strip() for d in date_text.split("-")]
+        start_date, end_date = [d.strip() for d in raw_date_text.split("-")]
+
+        # Determine AM or PM from both start and end dates
+        if "AM" in start_date.upper():
+            start_period = " (AM)"
+        elif "PM" in start_date.upper():
+            start_period = " (PM)"
+        if "AM" in end_date.upper():
+            end_period = " (AM)"
+        elif "PM" in end_date.upper():
+            end_period = " (PM)"
+
+        # Format dates
+        date_match = re.search(six_digit_pattern, start_date)
+        if date_match:
+            start_date = f"{date_match.group(1)}/{date_match.group(2)}/{date_match.group(3)}"
+            # print(start_date)
+        else:
+            print("No valid date found.")
+        date_match = re.search(six_digit_pattern, end_date)
+        if date_match:
+            end_date = f"{date_match.group(1)}/{date_match.group(2)}/{date_match.group(3)}"
+            # print(end_date)
+        else:
+            print("No valid date found.")
 
         # Convert individual dates
         start_date = re.sub(six_digit_pattern, r"\1/\2/\3", start_date)
         end_date = re.sub(six_digit_pattern, r"\1/\2/\3", end_date)
-        date_text = f"{start_date} - {end_date}"
-
-        # Determine AM or PM from both start and end dates
-        start_am, start_pm = "AM" in start_date.upper(), "PM" in start_date.upper()
-        end_am, end_pm = "AM" in end_date.upper(), "PM" in end_date.upper()
+        date_text = f"{start_date}{start_period} - {end_date}{end_period}"
 
         # date_text is a range, all sheets need to be updated
         sheets_to_update.extend(["AM", "PM"])
         informal_sheets_to_update.extend([f"{informal_sheet_name} (AM)", f"{informal_sheet_name} (PM)"])        
     else:
-        # Convert single date
-        date_text = re.sub(six_digit_pattern, r"\1/\2/\3", date_text)
-        if "AM" in raw_status.upper():
-            date_text += " (AM)"
-        if "PM" in raw_status.upper():
-            date_text += " (PM)"
+        # Format single date
+        date_match = re.search(six_digit_pattern, raw_date_text)
+        if date_match:
+            date_text = f"{date_match.group(1)}/{date_match.group(2)}/{date_match.group(3)}"
+            # print(date_text)
+        else:
+            print("No valid date found.")
 
         # Determine AM or PM
-        start_am, start_pm = "AM" in date_text.upper(), "PM" in date_text.upper()
-        end_am, end_pm = False, False
+        start_am, start_pm = False, False
+        if "AM" in raw_status.upper() or "AM" in location.upper() or "AM" in raw_date_text.upper():
+            start_am = True
+            date_text += " (AM)"
+        if "PM" in raw_status.upper() or "PM" in location.upper() or "PM" in raw_date_text.upper():
+            start_pm = True
+            date_text += " (PM)"
+        
+        # Convert date
+        date_text = re.sub(six_digit_pattern, r"\1/\2/\3", date_text)
 
         # Determine sheets to update
-        if start_am or end_am:
+        if start_am:
             sheets_to_update.append("AM")
             informal_sheets_to_update.append(f"{informal_sheet_name} (AM)")
-        if start_pm or end_pm:
+        if start_pm:
             sheets_to_update.append("PM")
             informal_sheets_to_update.append(f"{informal_sheet_name} (PM)")
         if len(sheets_to_update) == 0:
@@ -387,6 +417,7 @@ def extract_message(message):
     print("Extracted Status:", status)
     print("Extracted Informal Status:", informal_status)
     print("Extracted Names:", names)
+    # print("Extracted Raw Date:", raw_date_text)
     print("Extracted Date:", date_text)
     print("Extracted Location:", location)
     print("Extracted Reason:", reason)
@@ -727,10 +758,10 @@ async def check_and_update_status():
         # Combine name list for one batch update
         names += stay_in_names
         if names:
-            await update_sheet(status, "", names, "", "", [sheet_name])
+            await update_sheet(status, "", names, "", "", [sheet_name], chat_id)
     # Changes stay out to stay in for those needed
     if stay_in_names:
-        await update_sheet("P - STAY IN SGC 377", "", stay_in_names, "", "", ["NIGHT"])
+        await update_sheet("P - STAY IN SGC 377", "", stay_in_names, "", "", ["NIGHT"], chat_id)
 
     msg = f"📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time.strftime('%d/%m/%y %H:%M:%S')}"
     print(msg) # Debugging
