@@ -92,7 +92,7 @@ ptb.add_handler(CommandHandler("start", start))
 # /id Get chat id
 async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Reply with the user's chat ID
-    chat_id = update.message.chat.active_usernamesid
+    chat_id = update.message.chat.id
     await update.message.reply_text(f"Your chat ID is: {chat_id}")
 ptb.add_handler(CommandHandler("id", get_chat_id))
 
