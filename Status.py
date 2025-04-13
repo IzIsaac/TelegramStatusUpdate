@@ -344,6 +344,7 @@ def extract_message(message):
         start_date, end_date = [d.strip() for d in raw_date_text.split("-")]
 
         # Determine AM or PM from both start and end dates
+        start_period, end_period = "", ""
         if "AM" in start_date.upper():
             start_period = " (AM)"
         elif "PM" in start_date.upper():
