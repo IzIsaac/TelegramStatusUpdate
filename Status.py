@@ -338,20 +338,27 @@ def extract_message(message):
 
     # Check if it's a range (date-date or date - date)
     sheets_to_update, informal_sheets_to_update = [], []
-    informal_sheet_name = datetime.now().strftime("%b %y")    
+    informal_sheet_name = datetime.now().strftime("%b %y")
+
+    # Format range dates
+    if "to" in raw_date_text:
+        raw_date_text = re.sub(r"\s*to\s*", " - ", raw_date_text)
+    am_pattern = r"\b(AM|\(AM\))\b"
+    pm_pattern = r"\b(PM|\(PM\))\b"
+
     if "-" in raw_date_text:
         # Normalize spaces around "-" and split the range
         start_date, end_date = [d.strip() for d in raw_date_text.split("-")]
 
         # Determine AM or PM from both start and end dates
         start_period, end_period = "", ""
-        if "AM" in start_date.upper():
+        if re.search(am_pattern, start_date.upper(), re.IGNORECASE):
             start_period = " (AM)"
-        elif "PM" in start_date.upper():
+        elif re.search(pm_pattern, start_date.upper(), re.IGNORECASE):
             start_period = " (PM)"
-        if "AM" in end_date.upper():
+        if re.search(am_pattern, end_date.upper(), re.IGNORECASE):
             end_period = " (AM)"
-        elif "PM" in end_date.upper():
+        elif re.search(pm_pattern, end_date.upper(), re.IGNORECASE):
             end_period = " (PM)"
 
         # Format dates
@@ -385,12 +392,25 @@ def extract_message(message):
         else:
             print("No valid date found.")
 
+        # # Determine AM or PM
+        # start_am, start_pm = False, False
+        # if " AM" in raw_status.upper() or " AM" in location.upper() or " AM" in raw_date_text.upper() or "(AM)" in raw_status.upper() or "(AM)" in location.upper() or "(AM)" in raw_date_text.upper():
+        #     start_am = True
+        #     date_text += " (AM)"
+        # if " PM" in raw_status.upper() or " PM" in location.upper() or " PM" in raw_date_text.upper() or "(PM)" in raw_status.upper() or "(PM)" in location.upper() or "(PM)" in raw_date_text.upper():
+        #     start_pm = True
+        #     date_text += " (PM)"
+
+        # Determine AM or PM
+        # Combine text inputs to check for AM or PM
+        combined_text = f"{raw_status} {location} {raw_date_text}".upper()
+
         # Determine AM or PM
         start_am, start_pm = False, False
-        if "AM" in raw_status.upper() or "AM" in location.upper() or "AM" in raw_date_text.upper():
+        if re.search(am_pattern, combined_text):
             start_am = True
             date_text += " (AM)"
-        if "PM" in raw_status.upper() or "PM" in location.upper() or "PM" in raw_date_text.upper():
+        elif re.search(pm_pattern, combined_text):
             start_pm = True
             date_text += " (PM)"
         
@@ -779,9 +799,34 @@ async def check_and_update_status():
     await send_telegram_message(msg, chat_id=chat_id)
     return "✅ Status check complete!"
 
+async def send_reminder():
+    time = datetime.now()
+    day = time.weekday()
+    hour = time.hour
+
+    # Check if its a weekend
+    if day == 4 or day == 5:
+        return None
+
+    # Determine the period of the day
+    if 6 <= hour < 12: # From 6am to before 12pm
+        period = "AM"
+    elif 12 <= hour < 14: # From 12pm to before 2pm
+        period = "PM"
+    elif hour >= 17: # From 5pm onwards
+        period = "NIGHT"
+    else:
+        period = "UNSPECIFIED"  # For times outside the defined periods
+
+    # Send the reminder
+    await send_telegram_message(f"🔔 Reminder to update '{period}' status on WhatsApp~")
+
 # Step 9: Run the checks everyday (Cannot be asnyc)
 def run_asyncio_task():
     asyncio.run(check_and_update_status())
+
+def run_timed_reminders()
+    asyncio.run(send_reminder())
 
 # Function to start the scheduler
 scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust timezone
@@ -789,6 +834,10 @@ async def start_scheduler():
     print("Starting scheduler...")
     # scheduler.add_job(lambda: asyncio.create_task(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
     scheduler.add_job(run_asyncio_task, "cron", hour=22, minute=30, misfire_grace_time=60)
+
+    scheduler.add_job(run_timed_reminders, "cron", hour=8, misfire_grace_time=60)
+    scheduler.add_job(run_timed_reminders, "cron", hour=12, misfire_grace_time=60)
+    scheduler.add_job(run_timed_reminders, "cron", hour=18, misfire_grace_time=60)
     scheduler.start()
 
     # Ensure job is added before accessing it
