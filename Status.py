@@ -819,7 +819,7 @@ async def send_reminder():
         period = "UNSPECIFIED"  # For times outside the defined periods
 
     # Send the reminder
-    await send_telegram_message(f"🔔 Reminder to update '{period}' status on WhatsApp~")
+    await send_telegram_message(f"🔔 Reminder to update '{period}' status on WhatsApp~", chat_id)
 
 # Step 9: Run the checks everyday (Cannot be asnyc)
 def run_asyncio_task():
