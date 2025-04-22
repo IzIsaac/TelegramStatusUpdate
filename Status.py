@@ -811,9 +811,9 @@ async def send_reminder():
         return None
 
     # Determine the period of the day
-    if 0 <= hour < 13: # From 6am to before 12pm
+    if 0 <= hour < 11: # From 12am to before 11am
         period = "AM"
-    elif 13 <= hour < 17: # From 12pm to before 2pm
+    elif 11 <= hour < 17: # From 11am to before 5pm
         period = "PM"
     elif hour >= 17: # From 5pm onwards
         period = "NIGHT"
@@ -841,7 +841,7 @@ async def start_scheduler():
     scheduler.add_job(run_timed_reminders, "cron", hour=12, misfire_grace_time=60)
     scheduler.add_job(run_timed_reminders, "cron", hour=18, misfire_grace_time=60)
 
-    scheduler.add_job(run_timed_reminders, "cron", hour=22, minute=37, misfire_grace_time=60)
+    scheduler.add_job(run_timed_reminders, "cron", hour=22, minute=38, misfire_grace_time=60)
     scheduler.start()
 
     # Ensure job is added before accessing it
