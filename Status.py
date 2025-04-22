@@ -79,7 +79,7 @@ async def send_startup_message():
     # Replace with the chat ID where you want to send the message
     chat_id = CHAT_ID  # Can be your own chat ID or a group chat ID
     group_chat_id = GROUP_CHAT_ID
-    await ptb.bot.send_message(chat_id, "Startup complete!")
+    # await ptb.bot.send_message(chat_id, "Startup complete!")
     await ptb.bot.send_message(group_chat_id, "Startup complete!")
     asyncio.create_task(start_scheduler())
     print("✅ Scheduler started")
@@ -838,6 +838,8 @@ async def start_scheduler():
     scheduler.add_job(run_timed_reminders, "cron", hour=8, misfire_grace_time=60)
     scheduler.add_job(run_timed_reminders, "cron", hour=12, misfire_grace_time=60)
     scheduler.add_job(run_timed_reminders, "cron", hour=18, misfire_grace_time=60)
+
+    scheduler.add_job(run_timed_reminders, "cron", hour=22, minute=33, misfire_grace_time=60)
     scheduler.start()
 
     # Ensure job is added before accessing it
@@ -847,7 +849,7 @@ async def start_scheduler():
     if jobs and jobs[0].next_run_time:
         next_run_message = f"📅 Next status check will run at: {jobs[0].next_run_time.strftime('%d/%m/%y %H:%M:%S')}"
         print(next_run_message)
-        await send_telegram_message(next_run_message, chat_id=CHAT_ID)
+        # await send_telegram_message(next_run_message, chat_id=CHAT_ID)
         await send_telegram_message(next_run_message, chat_id=GROUP_CHAT_ID)
     else:
         print("⚠️ No scheduled jobs or next run time not available.")
