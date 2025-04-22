@@ -1,4 +1,5 @@
 from traceback import print_tb
+import zoneinfo
 from click import Context
 from numpy import matrix
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
@@ -800,11 +801,10 @@ async def check_and_update_status():
     return "✅ Status check complete!"
 
 async def send_reminder():
-    time = datetime.now() + timedelta(hours=8)
+    timezone = datetime.now(ZoneInfo("UTC"))
+    time = timezone.astimezone(ZoneInfo("Asia/Singapore"))
     day = time.weekday()
     hour = time.hour
-
-    print(f"Hour: {hour}")
 
     # Check if its a weekend
     if day == 4 or day == 5:
