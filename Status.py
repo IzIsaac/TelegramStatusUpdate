@@ -809,9 +809,9 @@ async def send_reminder():
         return None
 
     # Determine the period of the day
-    if 6 <= hour < 12: # From 6am to before 12pm
+    if 0 <= hour < 13: # From 6am to before 12pm
         period = "AM"
-    elif 12 <= hour < 14: # From 12pm to before 2pm
+    elif 13 <= hour < 17: # From 12pm to before 2pm
         period = "PM"
     elif hour >= 17: # From 5pm onwards
         period = "NIGHT"
@@ -819,7 +819,7 @@ async def send_reminder():
         period = "UNSPECIFIED"  # For times outside the defined periods
 
     # Send the reminder
-    await send_telegram_message(f"🔔 Reminder to update '{period}' status on WhatsApp~", chat_id)
+    await send_telegram_message(f"🔔 Reminder to update {period} status on WhatsApp~", chat_id)
 
 # Step 9: Run the checks everyday (Cannot be asnyc)
 def run_asyncio_task():
@@ -832,9 +832,9 @@ def run_timed_reminders():
 scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust timezone
 async def start_scheduler():
     print("Starting scheduler...")
-    # scheduler.add_job(lambda: asyncio.create_task(check_and_update_status()), "cron", hour=22, minute=30, misfire_grace_time=60)
+    # End of day check
     scheduler.add_job(run_asyncio_task, "cron", hour=22, minute=30, misfire_grace_time=60)
-
+    # Update Whatsapp Reminders
     scheduler.add_job(run_timed_reminders, "cron", hour=8, misfire_grace_time=60)
     scheduler.add_job(run_timed_reminders, "cron", hour=12, misfire_grace_time=60)
     scheduler.add_job(run_timed_reminders, "cron", hour=18, misfire_grace_time=60)
