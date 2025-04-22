@@ -800,7 +800,7 @@ async def check_and_update_status():
     return "✅ Status check complete!"
 
 async def send_reminder():
-    time = datetime.now()
+    time = datetime.now() + timedelta(hours=8)
     day = time.weekday()
     hour = time.hour
 
@@ -841,7 +841,7 @@ async def start_scheduler():
     scheduler.add_job(run_timed_reminders, "cron", hour=12, misfire_grace_time=60)
     scheduler.add_job(run_timed_reminders, "cron", hour=18, misfire_grace_time=60)
 
-    scheduler.add_job(run_timed_reminders, "cron", hour=22, minute=38, misfire_grace_time=60)
+    scheduler.add_job(run_timed_reminders, "cron", hour=22, minute=45, misfire_grace_time=60)
     scheduler.start()
 
     # Ensure job is added before accessing it
