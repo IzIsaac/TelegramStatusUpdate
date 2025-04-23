@@ -164,7 +164,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Icons ✅❌⚠️⏭️🔄📩🔔📌🪪📍👥🎭🧑‍🤝‍🧑📅🗓️📝📄📊📋
+    # Icons ✅❌⚠️⏭️🔄📩🔔📌🪪📍👥🎭🧑‍🤝‍🧑📅🗓️📝📄📊📋⌛
     
     response = (
         f"✅ *Status Update Received*\n"
@@ -344,8 +344,9 @@ def extract_message(message):
     # Format range dates
     if "to" in raw_date_text:
         raw_date_text = re.sub(r"\s*to\s*", " - ", raw_date_text)
-    am_pattern = r"\b(AM|\(AM\))\b"
-    pm_pattern = r"\b(PM|\(PM\))\b"
+    # am_pattern = r"\b(AM|\(AM\))\b"
+    # pm_pattern = r"\b(PM|\(PM\))\b"
+    am_pattern, pm_pattern = r"\b(AM)\b", r"\b(PM)\b"
 
     if "-" in raw_date_text:
         # Normalize spaces around "-" and split the range
@@ -590,7 +591,7 @@ async def update_sheet(status, location, names, date_text, reason, sheets_to_upd
 
             # for cell, value in updates:
             #     worksheet.update(range_name=cell, values=value)
-            msg = f"✅ Qued update for {name}'s record in {sheet_name} sheet (Row {row_index})"
+            msg = f"⌛ Qued update for {name}'s record in {sheet_name} sheet (Row {row_index})"
             print(msg)
             message += f"{msg}\n"
 
