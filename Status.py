@@ -512,6 +512,8 @@ def find_name_index(df, name, sheet_name, official):
         row_index = matching_rows[0] + 3  # Adjusting for header rows
         print(f"✅ Direct match found: '{name}' matched with row index {row_index}")
         return row_index
+    
+    # Add Squished Direct Substring Match here
 
     # 2. Name Part Match
     name_parts = name.split()
@@ -542,6 +544,9 @@ def find_name_index(df, name, sheet_name, official):
 
         # Select the row index with the highest count
         most_common_row = max(row_count, key=row_count.get)
+
+        # Add checker for equal matches issue
+
         row_index = most_common_row + 3  # Adjusting for header rows
         print(f"✅ Most common match found for '{name}' in row: {row_index}")
         return row_index
@@ -581,6 +586,10 @@ async def update_sheet(status, location, names, date_text, reason, sheets_to_upd
         # Update each person's record
         for name in names:
             row_index = find_name_index(df, name, sheet_name, official=True)
+            if row_index == None:
+                message += f"⚠️ No valid matches found for '{name}' in '{sheet_name}' sheet.\n"
+                continue
+
             # Update the Google Sheet
             updates.extend([
                 {"range": f"{chr(65 + status_col)}{row_index}", "values": [[status]]},
@@ -647,6 +656,9 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
         # Update each person's record
         for name in names:
             row_index = find_name_index(df, name, sheet_name, official=False)
+            if row_index == None:
+                message += f"⚠️ No valid matches found for '{name}' in '{sheet_name}' sheet.\n"
+                continue
             
             # Extract the days in the date range
             days = extract_days(date_text)
@@ -680,7 +692,7 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
                 updates.extend([
                     {"range": f"{date_col}{row_index}", "values": [[informal_status]]},
                 ])
-            msg = f"✅ Qued update '{informal_status}' for {name}'s record in {sheet_name} sheet (Row {row_index})"
+            msg = f"⌛ Qued update '{informal_status}' for {name}'s record in {sheet_name} sheet (Row {row_index})"
             print(msg)
             message += f"{msg}\n"
 
