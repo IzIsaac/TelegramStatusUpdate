@@ -834,6 +834,7 @@ async def send_reminder():
         period = "UNSPECIFIED"  # For times outside the defined periods
 
     # Send the reminder
+    print("🔔 Sending Reminder...")
     await send_telegram_message(f"🔔 Reminder to update {period} status on WhatsApp~", chat_id)
 
 # Step 9: Run the checks everyday (Cannot be asnyc)
@@ -853,6 +854,9 @@ async def start_scheduler():
     scheduler.add_job(run_timed_reminders, "cron", hour=8, misfire_grace_time=60)
     scheduler.add_job(run_timed_reminders, "cron", hour=12, misfire_grace_time=60)
     scheduler.add_job(run_timed_reminders, "cron", hour=18, misfire_grace_time=60)
+    scheduler.start()
+
+    scheduler.add_job(run_timed_reminders, "cron", hour=20, minute=20, misfire_grace_time=60)
     scheduler.start()
 
     # Ensure job is added before accessing it
