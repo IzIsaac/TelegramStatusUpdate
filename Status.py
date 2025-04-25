@@ -820,7 +820,7 @@ async def send_reminder():
     hour = time.hour
 
     # Check if its a weekend
-    if day == 4 or day == 5:
+    if day == 5 or day == 6:
         print("Its a weekend, skipping reminder.")
         return None
 
@@ -856,7 +856,7 @@ async def start_scheduler():
     scheduler.add_job(run_timed_reminders, "cron", hour=12, misfire_grace_time=60)
     scheduler.add_job(run_timed_reminders, "cron", hour=18, misfire_grace_time=60)
 
-    scheduler.add_job(run_timed_reminders, "cron", hour=20, minute=45, misfire_grace_time=60)
+    scheduler.add_job(run_timed_reminders, "cron", hour=20, minute=50, misfire_grace_time=60)
     scheduler.start()
 
     # Ensure job is added before accessing it
