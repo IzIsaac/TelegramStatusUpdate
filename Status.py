@@ -1,3 +1,4 @@
+from functools import partial
 from traceback import print_tb
 import zoneinfo
 from click import Context
@@ -55,11 +56,11 @@ else:
     print("❌ Error: Google Sheets credentials not found in environment variables.")
 
 # Step 3: Open Google Sheet
-google_sheets_url = os.getenv("google_sheets_url") # AI Sheet
+# google_sheets_url = os.getenv("google_sheets_url") # AI Sheet
 real_google_sheets_url = os.getenv("real_google_sheets_url")
 # sheet = client.open_by_url(google_sheets_url) # Change to toggle
 sheet = client.open_by_url(real_google_sheets_url) # Change to toggle
-informal_google_sheets_url = os.getenv("informal_google_sheets_url") # AI Sheet
+# informal_google_sheets_url = os.getenv("informal_google_sheets_url") # AI Sheet
 real_informal_google_sheets_url = os.getenv("real_informal_google_sheets_url")
 # informal_sheet = client.open_by_url(informal_google_sheets_url) # Change to toggle
 informal_sheet = client.open_by_url(real_informal_google_sheets_url) # Change to toggle
@@ -102,6 +103,12 @@ async def check_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # telegram_message = await ptb.bot.send_message(chat_id=CHAT_ID, text="🔄 Checking status...")
     telegram_message = await ptb.bot.send_message(chat_id=chat_id, text="🔄 Checking status...")
     message = await check_and_update_status()
+    await telegram_message.edit_text(message)
+
+    await asyncio.sleep(3)
+
+    telegram_message = await ptb.bot.send_message(chat_id=chat_id, text="🔄 Checking informal status...")
+    message = await check_and_update_informal_status()
     await telegram_message.edit_text(message)
 ptb.add_handler(CommandHandler("check", check_status))
 
@@ -510,10 +517,11 @@ def find_name_index(df, name, sheet_name, official):
     # 1. Direct Substring Match
     if len(matching_rows) == 1:
         row_index = matching_rows[0] + 3  # Adjusting for header rows
-        print(f"✅ Direct match found: '{name}' matched with row index {row_index}")
+        print(f"✅ Direct match found: '{name}' matched in row {row_index} | {df['Name'][matching_rows[0]]}")
         return row_index
     
-    # Add Squished Direct Substring Match here
+    # Squishing names by removing spaces
+    df["Squished_Name"] = df["Name"].str.replace(" ", "")    
 
     # 2. Name Part Match
     name_parts = name.split()
@@ -521,14 +529,14 @@ def find_name_index(df, name, sheet_name, official):
     for part in name_parts:
         # print(part)
         if official:
-            partial_matching_rows = df[(df["Name"].str.contains(part, case=False, na=False)) & (df["Platoon"] == "AE")].index.tolist()
+            partial_matching_rows = df[(df["Squished_Name"].str.contains(part, case=False, na=False)) & (df["Platoon"] == "AE")].index.tolist()
         else:
-            partial_matching_rows = df[df["Name"].str.contains(part, case=False, na=False)].index.tolist()
+            partial_matching_rows = df[df["Squished_Name"].str.contains(part, case=False, na=False)].index.tolist()
         part_matches.extend(partial_matching_rows)
 
         if len(partial_matching_rows) == 1:  # Found an exact match for a part
-            print(f"✅ Part match found: '{part}' matched with row index {partial_matching_rows[0] + 3}")
             row_index = partial_matching_rows[0] + 3  # Adjusting for header rows
+            print(f"✅ Part match found: '{part}' matched in row {row_index} | {df['Name'][partial_matching_rows[0]]}")
             return row_index
         elif len(partial_matching_rows) == 0:
             print(f"⚠️ No matching name found for '{part}' in '{sheet_name}' sheet.")
@@ -543,13 +551,16 @@ def find_name_index(df, name, sheet_name, official):
             row_count[index] = row_count.get(index, 0) + 1
 
         # Select the row index with the highest count
-        most_common_row = max(row_count, key=row_count.get)
+        max_count = max(row_count.values())
+        most_common_rows = [index for index, count in row_count.items() if count == max_count]
 
-        # Add checker for equal matches issue
-
-        row_index = most_common_row + 3  # Adjusting for header rows
-        print(f"✅ Most common match found for '{name}' in row: {row_index}")
-        return row_index
+        # Check for ties
+        if len(most_common_rows) > 1:
+            print(f"⚠️ Equal matches found for '{name}' in rows: {most_common_rows}. Skipping...")
+        else:
+            row_index = most_common_rows[0] + 3  # Adjusting for header rows
+            print(f"✅ Most common match found for '{name}' in row {row_index} | {df['Name'][most_common_rows[0]]}")
+            return row_index
 
     # No matches found
     print(f"⚠️ No valid matches found for '{name}' in '{sheet_name}' sheet.")
@@ -600,7 +611,7 @@ async def update_sheet(status, location, names, date_text, reason, sheets_to_upd
 
             # for cell, value in updates:
             #     worksheet.update(range_name=cell, values=value)
-            msg = f"⌛ Qued update for {name}'s record in {sheet_name} sheet (Row {row_index})"
+            msg = f"⌛ Qued update '{status}' for {name}'s record in {sheet_name} sheet | Name: {df['Name'][row_index-3]} (Row: {row_index})"
             print(msg)
             message += f"{msg}\n"
 
@@ -632,7 +643,7 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
         data = worksheet.get_all_values()
         headers = data[1]  # Use second row as headers
         df = pd.DataFrame(data[2:], columns=headers)  # Data starts from the third row
-        print(f"Accessing sheet: '{sheet_name}'")
+        print(f"🔎 Accessing sheet: '{sheet_name}'")
 
         # Normalize headers by stripping leading/trailing whitespace
         formatted_headers = [header.strip() for header in headers]
@@ -676,8 +687,8 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
                 elif len(informal_sheets_to_update) == 2 and sheet_name == informal_sheets_to_update[-1] and day == days[-1] and end_am:
                     print(f"📅 Status ends at 'AM' for {day}, skipping 'PM'...")
                     continue
-                # else:
-                #     print(f"📅 Day {day} is a weekday, processing...")
+                else:
+                    print(f"📅 Day {day} is a weekday, processing...")
 
                 try:
                     date_col = get_column_letter(formatted_headers.index(day)) # Index of day column
@@ -692,7 +703,7 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
                 updates.extend([
                     {"range": f"{date_col}{row_index}", "values": [[informal_status]]},
                 ])
-            msg = f"⌛ Qued update '{informal_status}' for {name}'s record in {sheet_name} sheet (Row {row_index})"
+            msg = f"⌛ Qued update '{informal_status}' for {name}'s record in {sheet_name} sheet | Name: {df['Name'][row_index-3]} (Row: {row_index})"
             print(msg)
             message += f"{msg}\n"
 
@@ -813,6 +824,64 @@ async def check_and_update_status():
     await send_telegram_message(msg, chat_id=chat_id)
     return "✅ Status check complete!"
 
+async def check_and_update_informal_status():
+    tomorrow = datetime.now() + timedelta(days=1)
+    day = tomorrow.strftime("%d")
+    tmr = tomorrow.strftime("%d/%m/%y")
+    weekday = tomorrow.weekday()  # Monday = 0, Sunday = 6
+    informal_sheet_name = tomorrow.strftime("%b %y")
+    informal_sheets = [f"{informal_sheet_name} (AM)", f"{informal_sheet_name} (PM)"]
+    message = ""
+    if weekday == 5 or weekday == 6:  
+        print("📅 Tomorrow is a weekend! No updates needed.")
+        return None # Exit function, skipping updates
+    else:
+        print("📅 Tomorrow is a weekday.")
+    print(f"Checking statuses for {tmr}...")
+    message += f"Checking statuses for {tmr}...\n"
+
+    for sheet_name in informal_sheets:
+        msg = f"🔎 Accessing worksheet: '{sheet_name}'"
+        print(msg)
+        message += f"{msg}\n"
+        names, default_status = [], "1"
+        worksheet = informal_sheet.worksheet(sheet_name)
+        data = worksheet.get_all_values()
+        headers = data[1]  # Use second row as headers
+        formatted_headers = [header.strip() for header in headers]
+        df = pd.DataFrame(data[2:], columns=headers)  # Data starts from the third row
+
+        # Get the indexes of S/N columns
+        second_name_batch = df[df["S/N"] == "S/N"].index.min()
+        # print(f"✅ Second occurrence of 'S/N' is at index {second_name_batch}")
+        if pd.isna(second_name_batch):
+            print(f"⚠️ No batch found in {sheet_name} sheet.")
+            continue
+        
+        for i, row in df.iloc[second_name_batch:].iterrows():
+            sn, name = row["S/N"].strip(), row["Name"].strip()
+            # print(f"S/N: {sn} | Name: {name}") # Debugging
+            # Skip if sn is not a digit
+            if not sn.isdigit():
+                continue
+            # Check if current status is empty
+            if not row[day].strip():
+                names.append(name)
+                msg = f"🚨 Empty status: {name}"
+                print(msg)
+                message += f"{msg}\n"
+        
+        await send_telegram_message(message, chat_id=chat_id)
+        message = ""
+        
+        # Update each sheet in batches
+        if names:
+            await update_informal_sheet(default_status, names, tmr, [sheet_name], chat_id)
+    msg = f"📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time.strftime('%d/%m/%y %H:%M:%S')}"
+    print(msg) # Debugging
+    await send_telegram_message(msg, chat_id=chat_id)
+    return "✅ Status check complete!"
+        
 async def send_reminder():
     timezone = datetime.now(ZoneInfo("UTC"))
     time = timezone.astimezone(ZoneInfo("Asia/Singapore"))
@@ -841,6 +910,8 @@ async def send_reminder():
 # Step 9: Run the checks everyday (Cannot be asnyc)
 def run_asyncio_task():
     asyncio.run(check_and_update_status())
+
+    asyncio.run(check_and_update_informal_status())
 
 def run_timed_reminders():
     asyncio.run(send_reminder())
