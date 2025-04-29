@@ -1,4 +1,19 @@
-flask
+# flask
+# python-telegram-bot==20.0
+# gspread
+# pandas
+# google-auth
+# google-auth-oauthlib
+# google-auth-httplib2
+# python-dotenv
+# waitress
+# fastapi
+# uvicorn
+
+# keyboard
+# apscheduler
+# time
+
 python-telegram-bot==20.0
 gspread
 pandas
@@ -6,9 +21,8 @@ google-auth
 google-auth-oauthlib
 google-auth-httplib2
 python-dotenv
-waitress
 fastapi
 uvicorn
-
-keyboard
 apscheduler
+starlette
+asyncio

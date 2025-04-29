@@ -1,14 +1,9 @@
-from functools import partial
-from traceback import print_tb
-import zoneinfo
-from click import Context
-from numpy import matrix
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 from telegram.constants import ParseMode
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext._contexttypes import ContextTypes
 from contextlib import asynccontextmanager
 from google.oauth2.service_account import Credentials
+from starlette.requests import ClientDisconnect
 from fastapi import FastAPI, Request, Response
 from dotenv import load_dotenv
 from http import HTTPStatus
@@ -22,8 +17,11 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import asyncio
+import time
+
 # Load environment variables from .env
 load_dotenv()
+# Icons ✅❌⚠️⏭️🔄📩🔔📌🪪📍👥🎭🧑‍🤝‍🧑📅🗓️📝📄📊📋⌛
 
 # Telegram Bot Token
 TELEGRAM_TOKEN = os.getenv('Telegram_Token')
@@ -105,7 +103,7 @@ async def check_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = await check_and_update_status()
     await telegram_message.edit_text(message)
 
-    await asyncio.sleep(3)
+    await asyncio.sleep(2) # Just a pause
 
     telegram_message = await ptb.bot.send_message(chat_id=chat_id, text="🔄 Checking informal status...")
     message = await check_and_update_informal_status()
@@ -114,7 +112,7 @@ ptb.add_handler(CommandHandler("check", check_status))
 
 # Function for other functions to send Telegram message
 async def send_telegram_message(message: str, chat_id: int):
-    await ptb.bot.send_message(chat_id=chat_id, text=message)
+    await ptb.bot.send_message(chat_id=chat_id, text=message, timeout=15)
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
@@ -134,7 +132,15 @@ async def ping():
 
 @app.post("/webhook")
 async def process_update(request: Request):
-    req = await request.json()
+    try:
+        req = await asyncio.wait_for(request.json(), timeout=10)
+    except asyncio.TimeoutError:
+        print("⌛ Timeout while recieving request.")
+        return Response(status_code=HTTPStatus.REQUEST_TIMEOUT)
+    except ClientDisconnect:
+        print("⌛ Client disconnected before request was completed.")
+        return Response(status_code=HTTPStatus.BAD_REQUEST)
+    
     update = Update.de_json(req, ptb.bot)
 
     global chat_id # Declare global variable
@@ -143,7 +149,7 @@ async def process_update(request: Request):
         chat_id = update.message.chat.id
         print(f"🔔 Chat ID updated: {chat_id}")
     else:
-        print("⚠️ Update does not contain a message. Skipping chat_id update.")
+        print("⏭️ Update does not contain a message. Skipping chat_id update.")
 
     await ptb.process_update(update)
     return Response(status_code=HTTPStatus.OK)
@@ -170,8 +176,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-
-    # Icons ✅❌⚠️⏭️🔄📩🔔📌🪪📍👥🎭🧑‍🤝‍🧑📅🗓️📝📄📊📋⌛
     
     response = (
         f"✅ *Status Update Received*\n"
@@ -618,11 +622,11 @@ async def update_sheet(status, location, names, date_text, reason, sheets_to_upd
         # Batch update if any
         if updates:
             try:
-                worksheet.batch_update(updates)
+                worksheet.batch_update(updates, timeout=15)
                 print(f"✅ Successfully updated {sheet_name} sheet.")
             except Exception as e:
                 success = False
-                msg = f"⚠️ Error during batch update in {sheet_name}: {e}"
+                msg = f"⚠️ Error during batch update in {sheet_name}: {e}\n⚠️ Retrying update..."
                 print(msg)
                 message += f"{msg}\n"
 
@@ -710,13 +714,15 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
         # Batch update if any
         if updates:
             try:
-                worksheet.batch_update(updates)
+                worksheet.batch_update(updates, timeout=15)
                 print(f"✅ Successfully updated '{sheet_name}' sheet.")
             except Exception as e:
                 success = False
-                msg = f"⚠️ Error during batch update in '{sheet_name}': {e}"
+                msg = f"⚠️ Error during batch update in '{sheet_name}': {e}\n⚠️ Retrying update..."
                 print(msg)
                 message += f"{msg}\n"
+                await asyncio.sleep(2)
+                worksheet.batch_update(updates) # Retry once
 
     if success:
         msg = "✅ All updates completed!"
@@ -848,13 +854,12 @@ async def check_and_update_informal_status():
         worksheet = informal_sheet.worksheet(sheet_name)
         data = worksheet.get_all_values()
         headers = data[1]  # Use second row as headers
-        formatted_headers = [header.strip() for header in headers]
         df = pd.DataFrame(data[2:], columns=headers)  # Data starts from the third row
 
         # Get the indexes of S/N columns
         second_name_batch = df[df["S/N"] == "S/N"].index.min()
         # print(f"✅ Second occurrence of 'S/N' is at index {second_name_batch}")
-        if pd.isna(second_name_batch):
+        if second_name_batch is None or pd.isna(second_name_batch):
             print(f"⚠️ No batch found in {sheet_name} sheet.")
             continue
         
@@ -876,6 +881,7 @@ async def check_and_update_informal_status():
         
         # Update each sheet in batches
         if names:
+            print(f"📝 Updating '{sheet_name}' for names: {names} with status: {default_status}")
             await update_informal_sheet(default_status, names, tmr, [sheet_name], chat_id)
     msg = f"📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time.strftime('%d/%m/%y %H:%M:%S')}"
     print(msg) # Debugging
@@ -909,33 +915,40 @@ async def send_reminder():
 
 # Step 9: Run the checks everyday (Cannot be asnyc)
 def run_asyncio_task():
-    asyncio.run(check_and_update_status())
-
-    asyncio.run(check_and_update_informal_status())
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(check_and_update_status())
+    loop.run_until_complete(check_and_update_informal_status())
+    loop.close() # Explicitly close the loop
 
 def run_timed_reminders():
-    asyncio.run(send_reminder())
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(send_reminder())
+    loop.close() # Explicitly close the loop
 
 # Function to start the scheduler
 scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust timezone
 async def start_scheduler():
     print("Starting scheduler...")
     # End of day check
-    scheduler.add_job(run_asyncio_task, "cron", hour=22, minute=30, misfire_grace_time=60)
+    scheduler.add_job(run_asyncio_task, "cron", hour=22, minute=30, misfire_grace_time=60, coalesce=True)
     # Update Whatsapp Reminders
-    scheduler.add_job(run_timed_reminders, "cron", hour=8, misfire_grace_time=60)
-    scheduler.add_job(run_timed_reminders, "cron", hour=12, misfire_grace_time=60)
-    scheduler.add_job(run_timed_reminders, "cron", hour=18, misfire_grace_time=60)
+    scheduler.add_job(run_timed_reminders, "cron", hour=8, misfire_grace_time=60, coalesce=True)
+    scheduler.add_job(run_timed_reminders, "cron", hour=12, misfire_grace_time=60, coalesce=True)
+    scheduler.add_job(run_timed_reminders, "cron", hour=18, misfire_grace_time=60, coalesce=True)
     scheduler.start()
 
     # Ensure job is added before accessing it
-    await asyncio.sleep(1)  # Add a small delay to ensure job registration
+    time.sleep(1)  # Add a small delay to ensure job registration
 
     jobs = scheduler.get_jobs()
     if jobs and jobs[0].next_run_time:
-        next_run_message = f"📅 Next status check will run at: {jobs[0].next_run_time.strftime('%d/%m/%y %H:%M:%S')}"
-        print(next_run_message)
-        # await send_telegram_message(next_run_message, chat_id=CHAT_ID)
-        await send_telegram_message(next_run_message, chat_id=GROUP_CHAT_ID)
-    else:
-        print("⚠️ No scheduled jobs or next run time not available.")
+        next_run_time = jobs[0].next_run_time if jobs[0].next_run_time else None
+        if next_run_time:
+            next_run_message = f"📅 Next status check will run at: {jobs[0].next_run_time.strftime('%d/%m/%y %H:%M:%S')}"
+            print(next_run_message)
+            # await send_telegram_message(next_run_message, chat_id=CHAT_ID)
+            await send_telegram_message(next_run_message, chat_id=GROUP_CHAT_ID)
+        else:
+            print("⚠️ No scheduled jobs or next run time not available.")
