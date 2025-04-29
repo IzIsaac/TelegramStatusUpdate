@@ -622,7 +622,7 @@ async def update_sheet(status, location, names, date_text, reason, sheets_to_upd
         # Batch update if any
         if updates:
             try:
-                worksheet.batch_update(updates, timeout=15)
+                worksheet.batch_update(updates)
                 print(f"✅ Successfully updated {sheet_name} sheet.")
             except Exception as e:
                 success = False
@@ -714,7 +714,7 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
         # Batch update if any
         if updates:
             try:
-                worksheet.batch_update(updates, timeout=15)
+                worksheet.batch_update(updates)
                 print(f"✅ Successfully updated '{sheet_name}' sheet.")
             except Exception as e:
                 success = False
