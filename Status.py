@@ -112,7 +112,7 @@ ptb.add_handler(CommandHandler("check", check_status))
 
 # Function for other functions to send Telegram message
 async def send_telegram_message(message: str, chat_id: int):
-    await ptb.bot.send_message(chat_id=chat_id, text=message, timeout=15)
+    await ptb.bot.send_message(chat_id=chat_id, text=message)
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
