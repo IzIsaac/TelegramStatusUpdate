@@ -119,14 +119,13 @@ async def lifespan(_: FastAPI):
     await ptb.bot.deleteWebhook()  # Ensure webhook is reset
     await asyncio.sleep(1)  # Small delay to ensure completion
     await ptb.bot.setWebhook("https://updatestatus-production.up.railway.app/webhook") # replace <your-webhook-url>
-    
+
     webhook_info = await ptb.bot.getWebhookInfo()
     print(f"✅ Webhook set to: {webhook_info.url}")
 
     async with ptb:
         await send_startup_message()
         await ptb.start()
-        await ptb.idle()  # Keeps bot running
         yield
         await ptb.stop()
 
