@@ -134,6 +134,7 @@ async def ping():
 async def process_update(request: Request):
     try:
         req = await asyncio.wait_for(request.json(), timeout=10)
+        print(f"🔎 Raw request data: {req}")
     except asyncio.TimeoutError:
         print("⌛ Timeout while recieving request.")
         return Response(status_code=HTTPStatus.REQUEST_TIMEOUT)
