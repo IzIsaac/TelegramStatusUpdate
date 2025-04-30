@@ -244,11 +244,13 @@ official_status_mapping = {
     "OL": "LEAVE",
     "OVERSEAS": "LEAVE",
     "LEAVE": "LEAVE",
+    "TIME OFF": "TO",
     "OFF": "OFF",
     "RSI": "RSI/ RSO",
     "RSO": "RSI/ RSO",
     "MC": "MC",
     "MA": "MA",
+    "TO": "TO",
     "C": "CSE",
     "L": "LEAVE",
     "O": "OFF"
@@ -274,9 +276,11 @@ informal_status_mapping = {
     "OL": "OL",
     "OVERSEAS": "OL",
     "LEAVE": "L",
+    "TIME OFF": "TO",
     "OFF": "O",
     "RSI": "RSI",
     "RSO": "RSO",
+    "TO": "TO",
     "MC": "MC",
     "MA": "MA",
     "XWB": "XWB",
@@ -284,7 +288,8 @@ informal_status_mapping = {
     "L": "L",
     "C": "C",
     "O": "O",
-    "PRESENT": "1"
+    "PRESENT": "1",
+    "1": "1"
 }
 
 # Step 6: Extract information
