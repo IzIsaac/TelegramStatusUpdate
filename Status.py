@@ -120,8 +120,9 @@ async def lifespan(_: FastAPI):
     await asyncio.sleep(1)  # Small delay to ensure completion
     await ptb.bot.setWebhook("https://updatestatus-production.up.railway.app/webhook") # replace <your-webhook-url>
 
-    webhook_info = await ptb.bot.getWebhookInfo()
-    print(f"✅ Webhook set to: {webhook_info.url}")
+    # Debugging
+    # webhook_info = await ptb.bot.getWebhookInfo()
+    # print(f"✅ Webhook set to: {webhook_info.url}")
 
     async with ptb:
         await send_startup_message()
@@ -138,9 +139,9 @@ async def ping():
 @app.post("/webhook")
 async def process_update(request: Request):
     try:
-        print("✅ Webhook received!")
+        # print("✅ Webhook received!")
         req = await asyncio.wait_for(request.json(), timeout=10)
-        print(f"🔎 Raw request data: {req}")
+        # print(f"🔎 Raw request data: {req}") # Debugging
     except asyncio.TimeoutError:
         print("⌛ Timeout while recieving request.")
         return Response(status_code=HTTPStatus.REQUEST_TIMEOUT)
@@ -295,8 +296,9 @@ informal_status_mapping = {
     "L": "L",
     "C": "C",
     "O": "O",
-    "PRESENT": "1",
-    "1": "1"
+    "PRESENT": 1,
+    "1": 1,
+    1 : 1
 }
 
 # Step 6: Extract information
@@ -862,7 +864,7 @@ async def check_and_update_informal_status():
         msg = f"🔎 Accessing worksheet: '{sheet_name}'"
         print(msg)
         message += f"{msg}\n"
-        names, default_status = [], "1"
+        names, default_status = [], 1
         worksheet = informal_sheet.worksheet(sheet_name)
         data = worksheet.get_all_values()
         headers = data[1]  # Use second row as headers
