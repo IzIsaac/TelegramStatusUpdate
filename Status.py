@@ -832,7 +832,7 @@ async def check_and_update_status():
 
 async def check_and_update_informal_status():
     tomorrow = datetime.now() + timedelta(days=1)
-    day = tomorrow.strftime("%d")
+    day = str(int(tomorrow.strftime("%d"))) # Convert "01" to "1" etc
     tmr = tomorrow.strftime("%d/%m/%y")
     weekday = tomorrow.weekday()  # Monday = 0, Sunday = 6
     informal_sheet_name = tomorrow.strftime("%b %y")
