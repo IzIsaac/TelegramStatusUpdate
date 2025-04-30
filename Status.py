@@ -79,8 +79,8 @@ async def send_startup_message():
     # Replace with the chat ID where you want to send the message
     chat_id = CHAT_ID  # Can be your own chat ID or a group chat ID
     group_chat_id = GROUP_CHAT_ID
-    # await ptb.bot.send_message(chat_id, "Startup complete!")
-    await ptb.bot.send_message(group_chat_id, "Startup complete!")
+    await ptb.bot.send_message(chat_id, "Startup complete!")
+    # await ptb.bot.send_message(group_chat_id, "Startup complete!")
     asyncio.create_task(start_scheduler())
     print("✅ Scheduler started")
 
