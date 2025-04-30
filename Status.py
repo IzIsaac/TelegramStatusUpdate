@@ -117,10 +117,16 @@ async def send_telegram_message(message: str, chat_id: int):
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     await ptb.bot.deleteWebhook()  # Ensure webhook is reset
+    await asyncio.sleep(1)  # Small delay to ensure completion
     await ptb.bot.setWebhook("https://updatestatus-production.up.railway.app/webhook") # replace <your-webhook-url>
+    
+    webhook_info = await ptb.bot.getWebhookInfo()
+    print(f"✅ Webhook set to: {webhook_info.url}")
+
     async with ptb:
         await send_startup_message()
         await ptb.start()
+        await ptb.idle()  # Keeps bot running
         yield
         await ptb.stop()
 
@@ -133,6 +139,7 @@ async def ping():
 @app.post("/webhook")
 async def process_update(request: Request):
     try:
+        print("✅ Webhook received!")
         req = await asyncio.wait_for(request.json(), timeout=10)
         print(f"🔎 Raw request data: {req}")
     except asyncio.TimeoutError:
@@ -955,6 +962,6 @@ async def start_scheduler():
             next_run_message = f"📅 Next status check will run at: {jobs[0].next_run_time.strftime('%d/%m/%y %H:%M:%S')}"
             print(next_run_message)
             # await send_telegram_message(next_run_message, chat_id=CHAT_ID)
-            await send_telegram_message(next_run_message, chat_id=GROUP_CHAT_ID)
+            await send_telegram_message(next_run_message, chat_id=CHAT_ID)
         else:
             print("⚠️ No scheduled jobs or next run time not available.")
