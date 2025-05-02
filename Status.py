@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from http import HTTPStatus
 import pandas as pd
 import tempfile
+import calendar
 import gspread
 import base64
 import re
@@ -494,30 +495,39 @@ def extract_message(message):
 
 def extract_days(date_text):
     # Regex pattern to match date format and extract the day (the first two digits)
-    day_pattern = r'(\d{1,2})/\d{2}/\d{2}'    # Only extracts the day (\d{2})
+    day_pattern = r'(\d{1,2})/(\d{2})/(\d{2})'
+    current_year, current_month = int(datetime.now().year % 100), int(datetime.now().month)
 
     # Search for all matches of the day pattern
-    days = re.findall(day_pattern, date_text)
+    date = re.findall(day_pattern, date_text)
+    # print(f"Date: {date}\nDay: {date[0][0]}")
 
-    if len(days) == 1:
-        # If there is only one day, return that day
-        return [str(int(days[0]))]
-    elif len(days) == 2:
-        # If there are two dates, generate the range of days
-        start_day = int(days[0])
-        end_day = int(days[1])
+    if len(date) == 1: # If there is only one day, return that day
+        return [str(int(date[0][0]))]
+    elif len(date) == 2: # If there are two dates, generate the range of days
+        # Extract days, months, and years
+        start_day, start_month, start_year = map(int, date[0])
+        end_day, end_month, end_year = map(int, date[1])
+
+        # Check month and year
+        if start_month != current_month or start_year != current_year:
+            start_day = 1
+        elif end_month != current_month or end_year != current_year:
+            end_day = calendar.monthrange(current_year, current_month)[1]
+        else:
+            start_day = int(date[0][0])
+            end_day = int(date[1][0])
         
         # Generate all days within the range
         day_list = []
         current_day = start_day
         while current_day <= end_day:
-            day_list.append(str(current_day))   # Append the day as a string
-            current_day += 1                   # Increment by one day
+            day_list.append(str(current_day)) # Append the day as a string
+            current_day += 1
         return day_list
     else:
         # In case of an unexpected format, return empty list
         return []
-
 def get_column_letter(index):
     # Convert a 0-based column index to Excel-style column letters.
     letters = ""
