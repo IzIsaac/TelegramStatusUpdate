@@ -1,4 +1,3 @@
-from keyboard import remap_key
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 from telegram.constants import ParseMode
 from telegram import ChatInviteLink, InlineKeyboardButton, InlineKeyboardMarkup, Update
