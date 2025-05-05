@@ -89,25 +89,25 @@ async def send_startup_message():
 async def start(update: Update, _: ContextTypes.DEFAULT_TYPE):
     text = '''Haii Haii, you either used this command to test it out or to actually figure out what this bot does.
     
-    In short, this bot is meant to help make updating parade state more convenient, yay~
+In short, this bot is meant to help make updating parade state more convenient, yay~
     
-    How? 
-    Firstly, you copy the status message from whatsapp to here.
+How? 
+Firstly, you copy the status message from whatsapp to here.
     Pls check that the format of the status message is correct because some people just dont like to follow the given format...
     
-    After you send the message, (Give the bot a few seconds to boot up if its not already active), the bot should reply with the relevant extracted information such as the persons name, status, date, etc.
+After you send the message, (Give the bot a few seconds to boot up if its not already active), the bot should reply with the relevant extracted information such as the persons name, status, date, etc.
     
-    Check, and please check, before pressing the '✅ Confirm' button.
+Check, and please check, before pressing the '✅ Confirm' button.
     
-    The bot will then start updating the relevant excel sheets. You can see what sheet the bot is updating, who and what status is being updated and the excel row and name that the update goes to. (For confirmation that the right row is being updated)
+The bot will then start updating the relevant excel sheets. You can see what sheet the bot is updating, who and what status is being updated and the excel row and name that the update goes to. (For confirmation that the right row is being updated)
 
-    There are regular reminders to tell you to say that strength is updated, so don't ignore it. :/
+There are regular reminders to tell you to say that strength is updated, so don't ignore it. :/
 
-    At the end of the day, 10:30pm, the bot automatically does a check for tomorrows status and clears any expired statuses.
+At the end of the day, 10:30pm, the bot automatically does a check for tomorrows status and clears any expired statuses.
 
-    This bot is made in python and extracts information from status messages by matching keywords found. So please, use the format...
+This bot is made in python and extracts information from status messages by matching keywords found. So please, use the format...
     
-    Hope this helps, for more information on the formatting of status messages, please type '/eg' for exmaples and more details. Ty~'''
+Hope this helps, for more information on the formatting of status messages, please type '/eg' for exmaples and more details. Ty~'''
 
     await update.message.reply_text(text=text)
 ptb.add_handler(CommandHandler("start", start))
@@ -135,17 +135,17 @@ ptb.add_handler(CommandHandler("check", check_status))
 
 # /help Command list
 async def command_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = '''📋 List of commands ✅❌⚠️⏭️🔄📩🔔📌🪪📍👥🎭🧑‍🤝‍🧑📅🗓️📝📄📊📋⌛
-    /help - 🔔 Opens up command list
+    text = '''📋 List of commands
+/help - 🔔 Opens up command list
 
-    /start - ✅ Introduction of StatusUpdate Bot
+/start - ✅ Introduction of StatusUpdate Bot
 
-    /eg - 🪪 Example formats and explantions (TBC)
+/eg - 🪪 Example formats and explantions (TBC)
 
-    /id - 📩 Get chat id of current chatgroup (Debugging purposes)
+/id - 📩 Get chat id of current chatgroup (Debugging purposes)
 
-    /check - 🔄 Runs the status check for official and informal excel sheets.
-    (Before 8pm: Checks if status expired TODAY. After 8pm: Checks if status expires TOMORROW.)'''
+/check - 🔄 Runs the status check for official and informal excel sheets.
+(Before 8pm: Checks if status expired TODAY. After 8pm: Checks if status expires TOMORROW.)'''
 
     await ptb.bot.send_message(chat_id=chat_id, text=text)
 ptb.add_handler(CommandHandler("help", command_list))
