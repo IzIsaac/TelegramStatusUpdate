@@ -1,6 +1,7 @@
+from keyboard import remap_key
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 from telegram.constants import ParseMode
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import ChatInviteLink, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from contextlib import asynccontextmanager
 from google.oauth2.service_account import Credentials
 from starlette.requests import ClientDisconnect
@@ -87,7 +88,29 @@ async def send_startup_message():
 
 # /Start command handler
 async def start(update: Update, _: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Starting...")
+    text = '''Haii Haii, you either used this command to test it out or to actually figure out what this bot does.
+    
+    In short, this bot is meant to help make updating parade state more convenient, yay~
+    
+    How? 
+    Firstly, you copy the status message from whatsapp to here.
+    Pls check that the format of the status message is correct because some people just dont like to follow the given format...
+    
+    After you send the message, (Give the bot a few seconds to boot up if its not already active), the bot should reply with the relevant extracted information such as the persons name, status, date, etc.
+    
+    Check, and please check, before pressing the '✅ Confirm' button.
+    
+    The bot will then start updating the relevant excel sheets. You can see what sheet the bot is updating, who and what status is being updated and the excel row and name that the update goes to. (For confirmation that the right row is being updated)
+
+    There are regular reminders to tell you to say that strength is updated, so don't ignore it. :/
+
+    At the end of the day, 10:30pm, the bot automatically does a check for tomorrows status and clears any expired statuses.
+
+    This bot is made in python and extracts information from status messages by matching keywords found. So please, use the format...
+    
+    Hope this helps, for more information on the formatting of status messages, please type '/eg' for exmaples and more details. Ty~'''
+
+    await update.message.reply_text(text=text)
 ptb.add_handler(CommandHandler("start", start))
 
 # /id Get chat id
@@ -111,6 +134,22 @@ async def check_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await telegram_message.edit_text(message)
 ptb.add_handler(CommandHandler("check", check_status))
 
+# /help Command list
+async def command_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = '''📋 List of commands ✅❌⚠️⏭️🔄📩🔔📌🪪📍👥🎭🧑‍🤝‍🧑📅🗓️📝📄📊📋⌛
+    /help - 🔔 Opens up command list
+
+    /start - ✅ Introduction of StatusUpdate Bot
+
+    /eg - 🪪 Example formats and explantions (TBC)
+
+    /id - 📩 Get chat id of current chatgroup (Debugging purposes)
+
+    /check - 🔄 Runs the status check for official and informal excel sheets.
+    (Before 8pm: Checks if status expired TODAY. After 8pm: Checks if status expires TOMORROW.)'''
+
+    await ptb.bot.send_message(chat_id=chat_id, text=text)
+ptb.add_handler(CommandHandler("help", command_list))
 # Function for other functions to send Telegram message
 async def send_telegram_message(message: str, chat_id: int):
     await ptb.bot.send_message(chat_id=chat_id, text=message)
@@ -420,15 +459,6 @@ def extract_message(message):
         else:
             print("No valid date found.")
 
-        # # Determine AM or PM
-        # start_am, start_pm = False, False
-        # if " AM" in raw_status.upper() or " AM" in location.upper() or " AM" in raw_date_text.upper() or "(AM)" in raw_status.upper() or "(AM)" in location.upper() or "(AM)" in raw_date_text.upper():
-        #     start_am = True
-        #     date_text += " (AM)"
-        # if " PM" in raw_status.upper() or " PM" in location.upper() or " PM" in raw_date_text.upper() or "(PM)" in raw_status.upper() or "(PM)" in location.upper() or "(PM)" in raw_date_text.upper():
-        #     start_pm = True
-        #     date_text += " (PM)"
-
         # Determine AM or PM
         # Combine text inputs to check for AM or PM
         combined_text = f"{raw_status} {location} {raw_date_text}".upper()
@@ -466,10 +496,13 @@ def extract_message(message):
         location_match = re.match(r"Locations?\s*:?\s*(.*)", line, re.IGNORECASE)
         if location_match:
             location = location_match.group(1).strip()
-
+        
+        remark_match = re.match(r"Remarks?\s*:?\s*(.*)", line, re.IGNORECASE)
         reason_match = re.match(r"Reasons?\s*:?\s*(.*)", line, re.IGNORECASE)
         if reason_match:
             reason = reason_match.group(1).strip()
+        elif remark_match:
+            reason = remark_match.group(1).strip()
 
     # Output extracted values
     # print("Extracted Raw Status:", raw_status)
@@ -514,9 +547,6 @@ def extract_days(date_text):
             start_day = 1
         elif end_month != current_month or end_year != current_year:
             end_day = calendar.monthrange(current_year, current_month)[1]
-        else:
-            start_day = int(date[0][0])
-            end_day = int(date[1][0])
         
         # Generate all days within the range
         day_list = []
@@ -528,6 +558,7 @@ def extract_days(date_text):
     else:
         # In case of an unexpected format, return empty list
         return []
+
 def get_column_letter(index):
     # Convert a 0-based column index to Excel-style column letters.
     letters = ""
@@ -766,21 +797,25 @@ async def check_and_update_status():
                    "Zhang Haoyuan", "Ong Jun Wei",
                    "Thong Wai Hung", "Lim Jia Hao",
                    "Alfred Leandro Liang", "Haziq Syahmi Bin Norzaim"}
-    tomorrow = datetime.now() + timedelta(days=1)
+    timezone = datetime.now(ZoneInfo("UTC"))
+    hour = timezone.astimezone(ZoneInfo("Asia/Singapore")).hour
+    tomorrow = timezone
+    if hour >= 20:
+        tomorrow += timedelta(days=1)
     tmr = tomorrow.strftime("%d/%m/%y")
     weekday = tomorrow.weekday()  # Monday = 0, Sunday = 6
     message = ""
     if weekday == 4:  # Friday
         # stay_in_ppl = set()
-        print(f"📅 Tomorrow is Friday! Updating all 'STAY IN' statuses to 'P - STAY OUT' for {len(stay_in_ppl)} personel.") # Clear stay-in list so no one stays in
+        print(f"📅 Friday! Updating all 'STAY IN' statuses to 'P - STAY OUT' for {len(stay_in_ppl)} personel.") # Clear stay-in list so no one stays in
     elif weekday == 5:  # Saturday
-        print("📅 Tomorrow is Saturday! No updates needed.")
+        print("📅 Saturday! No updates needed.")
         return None # Exit function, skipping updates
     elif weekday == 6:  # Sunday
         sheets = ["NIGHT"] # Only update NIGHT sheet
-        print("📅 Tomorrow is Sunday! Updating NIGHT sheet only.\nUpdating all stay in personel's status to 'P - STAY IN'.")
+        print("📅 Sunday! Updating NIGHT sheet only.\nUpdating all stay in personel's status to 'P - STAY IN'.")
     else:
-        print("📅 Tomorrow is a weekday.")
+        print("📅 A weekday.")
     print(f"Checking statuses for {tmr}...")
     message += f"Checking statuses for {tmr}...\n"
 
