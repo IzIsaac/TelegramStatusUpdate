@@ -947,6 +947,7 @@ async def check_and_update_informal_status():
     return "✅ Status check complete!"
         
 async def send_reminder():
+    global chat_id
     timezone = datetime.now(ZoneInfo("UTC"))
     time = timezone.astimezone(ZoneInfo("Asia/Singapore"))
     day = time.weekday()
@@ -967,34 +968,46 @@ async def send_reminder():
     else:
         period = "UNSPECIFIED"  # For times outside the defined periods
 
+    if not chat_id:
+        print("⚠️ No valid chat_id found, skipping reminder.")
+        return None
+
     # Send the reminder
     print("🔔 Sending Reminder...")
     await send_telegram_message(f"🔔 Reminder to update {period} status on WhatsApp~", chat_id)
+    return None
 
 # Step 9: Run the checks everyday (Cannot be asnyc)
-def run_asyncio_task():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(check_and_update_status())
-    loop.run_until_complete(check_and_update_informal_status())
-    loop.close() # Explicitly close the loop
+async def run_asyncio_task():
+    await check_and_update_status()  # Runs first and completes before the next function
+    await check_and_update_informal_status()  # Only runs after the previous task finishes
+
+    # loop = asyncio.new_event_loop()
+    # asyncio.set_event_loop(loop)
+    # loop.run_until_complete(check_and_update_status())
+    # loop.run_until_complete(check_and_update_informal_status())
+    # loop.close() # Explicitly close the loop
+
+def run_asyncio_task_wrapper(): # Wrapper used as original function is async
+    asyncio.run(run_asyncio_task())
 
 def run_timed_reminders():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(send_reminder())
-    loop.close() # Explicitly close the loop
+    # loop = asyncio.new_event_loop()
+    # asyncio.set_event_loop(loop)
+    # loop.run_until_complete(send_reminder())
+    # loop.close() # Explicitly close the loop
+    asyncio.create_task(send_reminder()) # Runs asynchronously in the background
 
 # Function to start the scheduler
 scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust timezone
 async def start_scheduler():
     print("Starting scheduler...")
     # End of day check
-    scheduler.add_job(run_asyncio_task, "cron", hour=22, minute=30, misfire_grace_time=60, coalesce=True)
+    scheduler.add_job(run_asyncio_task_wrapper, "cron", hour=22, minute=30, misfire_grace_time=60, coalesce=True, max_instances=1)
     # Update Whatsapp Reminders
-    scheduler.add_job(run_timed_reminders, "cron", hour=8, misfire_grace_time=60, coalesce=True)
-    scheduler.add_job(run_timed_reminders, "cron", hour=12, misfire_grace_time=60, coalesce=True)
-    scheduler.add_job(run_timed_reminders, "cron", hour=18, misfire_grace_time=60, coalesce=True)
+    scheduler.add_job(run_timed_reminders, "cron", hour=8, misfire_grace_time=60, coalesce=True, max_instances=1)
+    scheduler.add_job(run_timed_reminders, "cron", hour=12, misfire_grace_time=60, coalesce=True, max_instances=1)
+    scheduler.add_job(run_timed_reminders, "cron", hour=18, misfire_grace_time=60, coalesce=True, max_instances=1)
     scheduler.start()
 
     # Ensure job is added before accessing it
