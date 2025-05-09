@@ -1,3 +1,4 @@
+from matplotlib.dates import HOURS_PER_DAY
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 from telegram.constants import ParseMode
 from telegram import ChatInviteLink, InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -151,7 +152,8 @@ async def command_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
 ptb.add_handler(CommandHandler("help", command_list))
 # Function for other functions to send Telegram message
 async def send_telegram_message(message: str, chat_id: int):
-    await ptb.bot.send_message(chat_id=chat_id, text=message)
+    async with ptb.bot:  # Ensures cleanup after sending
+        await ptb.bot.send_message(chat_id=chat_id, text=message)
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
@@ -978,36 +980,38 @@ async def send_reminder():
     return None
 
 # Step 9: Run the checks everyday (Cannot be asnyc)
-async def run_asyncio_task():
-    await check_and_update_status()  # Runs first and completes before the next function
-    await check_and_update_informal_status()  # Only runs after the previous task finishes
+def run_asyncio_task():
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
 
-    # loop = asyncio.new_event_loop()
-    # asyncio.set_event_loop(loop)
-    # loop.run_until_complete(check_and_update_status())
-    # loop.run_until_complete(check_and_update_informal_status())
-    # loop.close() # Explicitly close the loop
-
-def run_asyncio_task_wrapper(): # Wrapper used as original function is async
-    asyncio.run(run_asyncio_task())
+    loop.run_until_complete(check_and_update_status())
+    loop.run_until_complete(check_and_update_informal_status())
 
 def run_timed_reminders():
-    # loop = asyncio.new_event_loop()
-    # asyncio.set_event_loop(loop)
-    # loop.run_until_complete(send_reminder())
-    # loop.close() # Explicitly close the loop
-    asyncio.create_task(send_reminder()) # Runs asynchronously in the background
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    loop.run_until_complete(send_reminder())
 
 # Function to start the scheduler
 scheduler = BackgroundScheduler(timezone=ZoneInfo("Asia/Singapore")) # Adjust timezone
 async def start_scheduler():
     print("Starting scheduler...")
     # End of day check
-    scheduler.add_job(run_asyncio_task_wrapper, "cron", hour=22, minute=30, misfire_grace_time=60, coalesce=True, max_instances=1)
+    scheduler.add_job(run_asyncio_task, "cron", hour=22, minute=30, misfire_grace_time=60, coalesce=True, max_instances=1)
     # Update Whatsapp Reminders
     scheduler.add_job(run_timed_reminders, "cron", hour=8, misfire_grace_time=60, coalesce=True, max_instances=1)
     scheduler.add_job(run_timed_reminders, "cron", hour=12, misfire_grace_time=60, coalesce=True, max_instances=1)
     scheduler.add_job(run_timed_reminders, "cron", hour=18, misfire_grace_time=60, coalesce=True, max_instances=1)
+
+    scheduler.add_job(run_timed_reminders, "cron", hour=22, minute=0, misfire_grace_time=60, coalesce=True, max_instances=1)
+
     scheduler.start()
 
     # Ensure job is added before accessing it
