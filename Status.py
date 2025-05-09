@@ -1008,9 +1008,6 @@ async def start_scheduler():
     scheduler.add_job(run_timed_reminders, "cron", hour=8, misfire_grace_time=60, coalesce=True, max_instances=1)
     scheduler.add_job(run_timed_reminders, "cron", hour=12, misfire_grace_time=60, coalesce=True, max_instances=1)
     scheduler.add_job(run_timed_reminders, "cron", hour=18, misfire_grace_time=60, coalesce=True, max_instances=1)
-
-    scheduler.add_job(run_timed_reminders, "cron", hour=22, minute=5, misfire_grace_time=60, coalesce=True, max_instances=1)
-
     scheduler.start()
 
     # Ensure job is added before accessing it
