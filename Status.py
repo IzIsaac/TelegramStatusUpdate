@@ -93,7 +93,7 @@ In short, this bot is meant to help make updating parade state more convenient, 
     
 How? 
 Firstly, you copy the status message from whatsapp to here.
-    Pls check that the format of the status message is correct because some people just dont like to follow the given format...
+Pls check that the format of the status message is correct because some people just dont like to follow the given format...
     
 After you send the message, (Give the bot a few seconds to boot up if its not already active), the bot should reply with the relevant extracted information such as the persons name, status, date, etc.
     
@@ -151,8 +151,7 @@ async def command_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
 ptb.add_handler(CommandHandler("help", command_list))
 # Function for other functions to send Telegram message
 async def send_telegram_message(message: str, chat_id: int):
-    async with ptb.bot:  # Ensures cleanup after sending
-        await ptb.bot.send_message(chat_id=chat_id, text=message)
+    await ptb.bot.send_message(chat_id=chat_id, text=message)
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
