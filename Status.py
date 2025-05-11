@@ -805,7 +805,7 @@ async def check_and_update_status():
     weekday = tomorrow.weekday()  # Monday = 0, Sunday = 6
     message = ""
     if weekday == 4:  # Friday
-        # stay_in_ppl = set()
+        stay_in_ppl = set()
         print(f"📅 Friday! Updating all 'STAY IN' statuses to 'P - STAY OUT' for {len(stay_in_ppl)} personel.") # Clear stay-in list so no one stays in
     elif weekday == 5:  # Saturday
         print("📅 Saturday! No updates needed.")
@@ -840,9 +840,11 @@ async def check_and_update_status():
             if platoon != "AE": # Stops when no longer AE ppl
                 break
             elif not date_range: # Skips ppl with no date
+                # Friday stay in to stay out
                 if weekday == 4 and current_status == "P - STAY IN SGC 377":
                     names.append(name)
-                elif name in stay_in_ppl and weekday == 6 and current_status == "P - STAY OUT":
+                # Stay outs to stay in (and weekday == 6) removed
+                elif name in stay_in_ppl and current_status == "P - STAY OUT":
                     stay_in_names.append(name)
                 else:
                     continue
@@ -889,7 +891,11 @@ async def check_and_update_status():
     return "✅ Status check complete!"
 
 async def check_and_update_informal_status():
-    tomorrow = datetime.now() + timedelta(days=1)
+    timezone = datetime.now(ZoneInfo("UTC"))
+    hour = timezone.astimezone(ZoneInfo("Asia/Singapore")).hour
+    tomorrow = timezone
+    if hour >= 20:
+        tomorrow += timedelta(days=1)
     day = str(int(tomorrow.strftime("%d"))) # Convert "01" to "1" etc
     tmr = tomorrow.strftime("%d/%m/%y")
     weekday = tomorrow.weekday()  # Monday = 0, Sunday = 6
@@ -897,10 +903,10 @@ async def check_and_update_informal_status():
     informal_sheets = [f"{informal_sheet_name} (AM)", f"{informal_sheet_name} (PM)"]
     message = ""
     if weekday == 5 or weekday == 6:  
-        print("📅 Tomorrow is a weekend! No updates needed.")
+        print("📅 Its a weekend! No updates needed.")
         return None # Exit function, skipping updates
     else:
-        print("📅 Tomorrow is a weekday.")
+        print("📅 A weekday.")
     print(f"Checking statuses for {tmr}...")
     message += f"Checking statuses for {tmr}...\n"
 
