@@ -1,4 +1,3 @@
-from huggingface_hub import TextToImageTargetSize
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 from telegram.constants import ParseMode
 from telegram import ChatInviteLink, InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -155,7 +154,7 @@ async def send_telegram_message(message: str, chat_id: int):
     await ptb.bot.send_message(chat_id=chat_id, text=message)
 
 async def eg(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = '''You actually need this? Ok, i'll go through the details with you...
+    text = '''🎭 You actually need this? Ok, i'll go through the details with you...
     
 📄 *Format*
 Status: {Your status} @ {Location you will be at}
@@ -165,38 +164,38 @@ Date: {Duration of status}
 Location: {Location if any}
 Reason: {Reason / Remarks for status if any}
 
-Obviously there are many variations. I'll give examples for those later.
+Obviously there are many variations. 📊 I'll give examples for those later.
 
-The format above is the general format for most statuses. Anything in {Brackets} is the actual information that you are supposed to send.
+The format above is the general format for most statuses. 🔔 Anything in {Brackets} is the actual information that you are supposed to send.
 
-*Status*
-Start with the word "Status". Spaces and ":" are optional.
+🪪 *Status*
+Start with the word "Status". 📍 Spaces and ":" are optional.
 Write your status, short form or spelled out correctly pls.
-@ If you want to include the location right after.
-Eg: "Status: Outstation *@* KC3"
-I cannot stress how important this little "@" is. The bot won't detect a location if you don't add this...
+🔔 "@" If you want to include the location right after.
+📌 Eg: "Status: Outstation *@* KC3"
+I cannot stress how important this little "@" is. The bot won't detect the location if you don't add this...
 
-*R/Name*
-Start with "R/Name". Spaces and ":" are optional again, "R/Name" or "R/Names" is fine too. 
+👥 *R/Name*
+Start with "R/Name". 📍 Spaces and ":" are optional again, "R/Name" or "R/Names" is fine too. 
 Write your rank and name, yes rank is needed.
-Eg: "PTE"/"LCP"/"CPL"/"3SG"/"ME1"
+📌 Eg: "PTE"/"LCP"/"CPL"/"3SG"/"ME1"
 One rank and name per line ok?
-Eg: 
+📌 Eg: 
 "R/Names: CPL Isaac
 3SG Isaac Lam"
 
-*Date*
-Start with "Date" with or without "s", you get the drill.
+📅 *Date*
+Start with "Date" with or without "s", 📍 you get the drill.
 There is a specific formats for dates.
 Two ways, a string of digits, or with "/" in between.
-If the status lasts for multiple days, use a "-" / "to" in between the start and end date.
-Eg: "150525" Means 15th May 2025
+🔔 If the status lasts for multiple days, use a "-" / "to" in between the start and end date.
+📌 Eg: "150525" Means 15th May 2025
 "15/05/25" --> Say but with "/"
 "051525 - 101525" --> 5th to 10th May 2025
 "05/15/25 to 10/15/25" --> Same thing and you can use "to" instead
 Please *don't* spell it out like "15th May 2025".
 
-*Location*
+📝 *Location*
 Aaaaaa im so tired i'll continue this next time, gud night...
 '''
 
