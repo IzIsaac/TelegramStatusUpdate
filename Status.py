@@ -669,7 +669,7 @@ async def update_sheet(status, location, names, date_text, reason, sheets_to_upd
 
             # for cell, value in updates:
             #     worksheet.update(range_name=cell, values=value)
-            msg = f"⌛ Qued update '{status}' for {name}'s record in {sheet_name} sheet | Name: {df['Name'][row_index-3]} (Row: {row_index})"
+            msg = f"⌛ '{status}' -> {name} | {sheet_name} sheet | Name: {df['Name'][row_index-3]}"
             print(msg)
             message += f"{msg}\n"
 
@@ -761,7 +761,7 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
                 updates.extend([
                     {"range": f"{date_col}{row_index}", "values": [[informal_status]]},
                 ])
-            msg = f"⌛ Qued update '{informal_status}' for {name}'s record in {sheet_name} sheet | Name: {df['Name'][row_index-3]} (Row: {row_index})"
+            msg = f"⌛ '{informal_status}' -> {name} | {sheet_name} sheet | Name: {df['Name'][row_index-3]}"
             print(msg)
             message += f"{msg}\n"
 
