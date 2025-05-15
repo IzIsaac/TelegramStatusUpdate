@@ -1,3 +1,4 @@
+from huggingface_hub import TextToImageTargetSize
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
 from telegram.constants import ParseMode
 from telegram import ChatInviteLink, InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -88,7 +89,7 @@ async def send_startup_message():
 # /Start command handler
 async def start(update: Update, _: ContextTypes.DEFAULT_TYPE):
     text = '''Haii Haii, you either used this command to test it out or to actually figure out what this bot does.
-    
+
 In short, this bot is meant to help make updating parade state more convenient, yay~
     
 How? 
@@ -152,6 +153,55 @@ ptb.add_handler(CommandHandler("help", command_list))
 # Function for other functions to send Telegram message
 async def send_telegram_message(message: str, chat_id: int):
     await ptb.bot.send_message(chat_id=chat_id, text=message)
+
+async def eg(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = '''You actually need this? Ok, i'll go through the details with you...
+    
+📄 *Format*
+Status: {Your status} @ {Location you will be at}
+R/Name: {Rank and Name}
+{Any more Ranks and Names}
+Date: {Duration of status}
+Location: {Location if any}
+Reason: {Reason / Remarks for status if any}
+
+Obviously there are many variations. I'll give examples for those later.
+
+The format above is the general format for most statuses. Anything in {Brackets} is the actual information that you are supposed to send.
+
+*Status*
+Start with the word "Status". Spaces and ":" are optional.
+Write your status, short form or spelled out correctly pls.
+@ If you want to include the location right after.
+Eg: "Status: Outstation *@* KC3"
+I cannot stress how important this little "@" is. The bot won't detect a location if you don't add this...
+
+*R/Name*
+Start with "R/Name". Spaces and ":" are optional again, "R/Name" or "R/Names" is fine too. 
+Write your rank and name, yes rank is needed.
+Eg: "PTE"/"LCP"/"CPL"/"3SG"/"ME1"
+One rank and name per line ok?
+Eg: 
+"R/Names: CPL Isaac
+3SG Isaac Lam"
+
+*Date*
+Start with "Date" with or without "s", you get the drill.
+There is a specific formats for dates.
+Two ways, a string of digits, or with "/" in between.
+If the status lasts for multiple days, use a "-" / "to" in between the start and end date.
+Eg: "150525" Means 15th May 2025
+"15/05/25" --> Say but with "/"
+"051525 - 101525" --> 5th to 10th May 2025
+"05/15/25 to 10/15/25" --> Same thing and you can use "to" instead
+Please *don't* spell it out like "15th May 2025".
+
+*Location*
+Aaaaaa im so tired i'll continue this next time, gud night...
+'''
+
+    await ptb.bot.send_message(chat_id=chat_id, text=text)
+ptb.add_handler(CommandHandler("eg", eg))
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
@@ -399,7 +449,7 @@ def extract_message(message):
 
     # Convert date to fixed format (DD/MM/YY)
     # Regular expression for 6-digit (DDMMYY) dates
-    six_digit_pattern = r"\b(\d{2})[\/]?(\d{2})[\/]?(\d{2})\b"
+    six_digit_pattern = r"\b(\d{1,2})[\/]?(\d{1,2})[\/]?(\d{2})\b"
 
     # Check if it's a range (date-date or date - date)
     sheets_to_update, informal_sheets_to_update = [], []
@@ -408,8 +458,6 @@ def extract_message(message):
     # Format range dates
     if "to" in raw_date_text:
         raw_date_text = re.sub(r"\s*to\s*", " - ", raw_date_text)
-    # am_pattern = r"\b(AM|\(AM\))\b"
-    # pm_pattern = r"\b(PM|\(PM\))\b"
     am_pattern, pm_pattern = r"\b(AM)\b", r"\b(PM)\b"
 
     if "-" in raw_date_text:
@@ -502,6 +550,10 @@ def extract_message(message):
             reason = reason_match.group(1).strip()
         elif remark_match:
             reason = remark_match.group(1).strip()
+
+        mc_no_match = re.match(r"MC No.?\s*:?\s*(.*)", line, re.IGNORECASE)
+        if mc_no_match:
+            reason = mc_no_match.group(1).strip()
 
     # Output extracted values
     # print("Extracted Raw Status:", raw_status)
