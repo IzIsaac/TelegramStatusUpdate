@@ -873,12 +873,9 @@ async def check_and_update_status():
     if weekday == 4:  # Friday
         stay_in_ppl = set()
         print(f"📅 Friday! Updating all 'STAY IN' statuses to 'P - STAY OUT' for {len(stay_in_ppl)} personel.") # Clear stay-in list so no one stays in
-    elif weekday == 5:  # Saturday
-        print("📅 Saturday! No updates needed.")
-        return None # Exit function, skipping updates
-    elif weekday == 6:  # Sunday
+    elif weekday == 5 or weekday == 6:  # Saturday or Sunday
         sheets = ["NIGHT"] # Only update NIGHT sheet
-        print("📅 Sunday! Updating NIGHT sheet only.\nUpdating all stay in personel's status to 'P - STAY IN'.")
+        print("📅 Weekend! Updating NIGHT sheet only.\nUpdating all stay in personel's status to 'P - STAY IN'.")
     else:
         print("📅 A weekday.")
     print(f"Checking statuses for {tmr}...")
@@ -1026,7 +1023,7 @@ async def send_reminder():
     hour = time.hour
 
     # Check if its a weekend
-    if day == 5 or day == 6:
+    if (day == 5 or day == 6) and hour < 17:
         print("Its a weekend, skipping reminder.")
         return None
 
