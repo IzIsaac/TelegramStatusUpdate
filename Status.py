@@ -1091,6 +1091,6 @@ async def start_scheduler():
             next_run_message = f"📅 Next status check will run at: {jobs[0].next_run_time.strftime('%d/%m/%y %H:%M:%S')}"
             print(next_run_message)
             # await send_telegram_message(next_run_message, chat_id=CHAT_ID)
-            await send_telegram_message(next_run_message, chat_id=CHAT_ID)
+            # await send_telegram_message(next_run_message, chat_id=CHAT_ID)
         else:
             print("⚠️ No scheduled jobs or next run time not available.")
