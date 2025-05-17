@@ -22,7 +22,7 @@ import time
 
 # Load environment variables from .env
 load_dotenv()
-# Icons ✅❌⚠️⏭️🔄📩🔔📌🪪📍👥🎭🧑‍🤝‍🧑📅🗓️📝📄📊📋⌛
+# Icons ✅❌⚠️⏭️🔄📩🔔📌🪪📍👥🎭🧑‍🤝‍🧑📅🗓️📝📄📊📋⌛🩺
 
 # Telegram Bot Token
 TELEGRAM_TOKEN = os.getenv('Telegram_Token')
@@ -195,8 +195,23 @@ Two ways, a string of digits, or with "/" in between.
 "05/15/25 to 10/15/25" --> Same thing and you can use "to" instead
 Please *don't* spell it out like "15th May 2025".
 
-📝 *Location*
-Aaaaaa im so tired i'll continue this next time, gud night...
+📋 *Location*
+You get the drill right?
+Whatever you write in this part is used as the location if you didn't already put it in the status section.
+
+📝 *Reason/Remark*
+You should know what i want to say...
+You can call it "Reason" or call it "Remark", 📍 whatever just choose one.
+Anything in this part is used as the reason / remark.
+
+Thats the gist of it, moving onto additional details, i'll talk about MCs.
+
+🩺 *MC No.*
+📄 Format: "MC No. {Your MC No.}"
+With or without the "." and ":", of course.
+📍 This will replace whatever you wrote in "Reason/Remark"
+
+I can't think of anything else that needs explaining. Let me know if there are any more details that you wish to know!
 '''
 
     await ptb.bot.send_message(chat_id=chat_id, text=text)
