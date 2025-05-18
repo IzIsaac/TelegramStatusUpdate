@@ -875,7 +875,7 @@ async def check_and_update_status():
         print(f"📅 Friday! Updating all 'STAY IN' statuses to 'P - STAY OUT' for {len(stay_in_ppl)} personel.") # Clear stay-in list so no one stays in
     elif weekday == 5 or weekday == 6:  # Saturday or Sunday
         sheets = ["NIGHT"] # Only update NIGHT sheet
-        print("📅 Weekend! Updating NIGHT sheet only.\nUpdating all stay in personel's status to 'P - STAY IN'.")
+        print("📅 Weekend! Updating NIGHT sheet only.")
     else:
         print("📅 A weekday.")
     print(f"Checking statuses for {tmr}...")
@@ -934,10 +934,9 @@ async def check_and_update_status():
             except ValueError: # Skip invalid dates
                 print(f"⚠️ Invalid date format for {name}: '{date_range}'")
                 continue
-        if not message:
-            message += f"🔎 No expired status found in '{sheet_name}'!\n"
-        await send_telegram_message(message, chat_id=chat_id)
-        message = ""
+        message += "\n"
+        # await send_telegram_message(message, chat_id=chat_id)
+        # message = ""
 
         # Update each sheet in batches
         # Combine name list for one batch update
@@ -950,7 +949,8 @@ async def check_and_update_status():
 
     msg = f"📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time.strftime('%d/%m/%y %H:%M:%S')}"
     print(msg) # Debugging
-    await send_telegram_message(msg, chat_id=chat_id)
+    message += msg
+    await send_telegram_message(message, chat_id=chat_id)
     return "✅ Status check complete!"
 
 async def check_and_update_informal_status():
@@ -966,8 +966,9 @@ async def check_and_update_informal_status():
     informal_sheets = [f"{informal_sheet_name} (AM)", f"{informal_sheet_name} (PM)"]
     message = ""
     if weekday == 5 or weekday == 6:  
-        print("📅 Its a weekend! No updates needed.")
-        return None # Exit function, skipping updates
+        msg = "📅 Its a weekend! No updates needed."
+        print(msg)
+        return msg # Exit function, skipping updates
     else:
         print("📅 A weekday.")
     print(f"Checking statuses for {tmr}...")
@@ -1002,9 +1003,9 @@ async def check_and_update_informal_status():
                 msg = f"🚨 Empty status: {name}"
                 print(msg)
                 message += f"{msg}\n"
-        
-        await send_telegram_message(message, chat_id=chat_id)
-        message = ""
+        message += "\n"
+        # await send_telegram_message(message, chat_id=chat_id)
+        # message = ""
         
         # Update each sheet in batches
         if names:
@@ -1012,7 +1013,8 @@ async def check_and_update_informal_status():
             await update_informal_sheet(default_status, names, tmr, [sheet_name], chat_id)
     msg = f"📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time.strftime('%d/%m/%y %H:%M:%S')}"
     print(msg) # Debugging
-    await send_telegram_message(msg, chat_id=chat_id)
+    message += msg
+    await send_telegram_message(message, chat_id=chat_id)
     return "✅ Status check complete!"
         
 async def send_reminder():
