@@ -911,8 +911,8 @@ async def check_and_update_status():
                     stay_in_names.append(name)
                 else:
                     continue
-                print(f"🚨 Expired status: {name}")
-                message += (f"🚨 Expired status: {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
+                print(f"🚨 Expired: {name}")
+                message += (f"🚨 Expired: {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
                 continue
 
             # Formate date for comparison
@@ -925,8 +925,8 @@ async def check_and_update_status():
 
                 # Compare end_date to tomorrows's date
                 if end_date.date() < tomorrow.date():
-                    print(f"🚨 Expired status: {name}")
-                    message += (f"🚨 Expired status: {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
+                    print(f"🚨 Expired: {name}")
+                    message += (f"🚨 Expired: {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
                     if name in stay_in_ppl:
                         stay_in_names.append(name)
                     else:
@@ -934,9 +934,9 @@ async def check_and_update_status():
             except ValueError: # Skip invalid dates
                 print(f"⚠️ Invalid date format for {name}: '{date_range}'")
                 continue
-        message += "\n"
-        # await send_telegram_message(message, chat_id=chat_id)
-        # message = ""
+        # message += "\n" (Trying to merge all messages)
+        await send_telegram_message(message, chat_id=chat_id)
+        message = ""
 
         # Update each sheet in batches
         # Combine name list for one batch update
@@ -1000,12 +1000,12 @@ async def check_and_update_informal_status():
             # Check if current status is empty
             if not row[day].strip():
                 names.append(name)
-                msg = f"🚨 Empty status: {name}"
+                msg = f"🚨 Empty: {name}"
                 print(msg)
                 message += f"{msg}\n"
-        message += "\n"
-        # await send_telegram_message(message, chat_id=chat_id)
-        # message = ""
+        # message += "\n" (Trying to merge all messages)
+        await send_telegram_message(message, chat_id=chat_id)
+        message = ""
         
         # Update each sheet in batches
         if names:
