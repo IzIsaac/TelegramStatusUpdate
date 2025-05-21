@@ -937,7 +937,7 @@ async def check_and_update_status():
                 # print(end_date)
 
                 # Compare end_date to tomorrows's date
-                if end_date() == tomorrow.date(): 
+                if end_date.date() == tomorrow.date(): 
                     # Same day, status expires at some period
                     if (period == sheet_name) or (period == "PM" and sheet_name == "AM"):
                         print(f"⏭️ Status not expired in {period} for {sheet_name} sheet, skipping...")
