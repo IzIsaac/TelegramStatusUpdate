@@ -15,7 +15,7 @@ import base64
 import re
 import os
 from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 import asyncio
 import time
@@ -567,7 +567,7 @@ def extract_message(message):
 
         mc_no_match = re.match(r"MC No.?\s*:?\s*(.*)", line, re.IGNORECASE)
         if mc_no_match:
-            reason = mc_no_match.group(1).strip()
+            reason = "MC No. " + mc_no_match.group(1).strip()
 
     # Output extracted values
     # print("Extracted Raw Status:", raw_status)
@@ -906,8 +906,8 @@ async def check_and_update_status():
                 # Friday stay in to stay out
                 if weekday == 4 and current_status == "P - STAY IN SGC 377":
                     names.append(name)
-                # Stay outs to stay in (and weekday == 6) removed
-                elif name in stay_in_ppl and current_status == "P - STAY OUT":
+                # Sunday stay out to stay in
+                elif name in stay_in_ppl and current_status == "P - STAY OUT" and weekday == 6:
                     stay_in_names.append(name)
                 else:
                     continue
@@ -916,15 +916,33 @@ async def check_and_update_status():
                 continue
 
             # Formate date for comparison
-            date_range = date_range.replace("(AM)", "").replace("(PM)", "").strip()
+            date_parts = date_range.replace("(AM)", "").replace("(PM)", "").strip()
             # print(date_range)
             try:
-                date_parts = date_range.split("-")
-                end_date = datetime.strptime(date_parts[-1].strip(), "%d/%m/%y") if len(date_parts) > 1 else datetime.strptime(date_parts[0].strip(), "%d/%m/%y")
+                date_range = date_range.split("-") # With AM/PM
+                date_parts = date_parts.split("-")
+                if len(date_parts) > 1:
+                    end_date = datetime.strptime(date_parts[-1].strip(), "%d/%m/%y")
+                    period = date_range[-1].upper()
+                else:
+                    end_date = datetime.strptime(date_parts[0].strip(), "%d/%m/%y")
+                    period = date_range[0].upper()
+                if "(AM)" in period:
+                    period = "AM"
+                elif "(PM)" in period:
+                    period = "PM"
+                    
+                # end_date = datetime.strptime(date_parts[-1].strip(), "%d/%m/%y") if len(date_parts) > 1 else datetime.strptime(date_parts[0].strip(), "%d/%m/%y")
+
                 # print(end_date)
 
                 # Compare end_date to tomorrows's date
-                if end_date.date() < tomorrow.date():
+                if end_date() == tomorrow.date(): 
+                    # Same day, status expires at some period
+                    if (period == sheet_name) or (period == "PM" and sheet_name == "AM"):
+                        print(f"⏭️ Status not expired in {period} for {sheet_name} sheet, skipping...")
+                        continue
+                elif end_date.date() < tomorrow.date():
                     print(f"🚨 Expired: {name}")
                     message += (f"🚨 Expired: {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
                     if name in stay_in_ppl:
