@@ -149,6 +149,7 @@ async def command_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await ptb.bot.send_message(chat_id=chat_id, text=text)
 ptb.add_handler(CommandHandler("help", command_list))
+
 # Function for other functions to send Telegram message
 async def send_telegram_message(message: str, chat_id: int):
     await ptb.bot.send_message(chat_id=chat_id, text=message)
@@ -221,7 +222,8 @@ ptb.add_handler(CommandHandler("eg", eg))
 async def lifespan(_: FastAPI):
     await ptb.bot.deleteWebhook()  # Ensure webhook is reset
     await asyncio.sleep(1)  # Small delay to ensure completion
-    await ptb.bot.setWebhook("https://updatestatus-production.up.railway.app/webhook") # replace <your-webhook-url>
+    await ptb.bot.setWebhook("https://eofute7o0hxmomt.m.pipedream.net/webhook") # replace <your-webhook-url>
+    # Railway: https://updatestatus-production.up.railway.app/webhook
 
     # Debugging
     # webhook_info = await ptb.bot.getWebhookInfo()
@@ -931,6 +933,8 @@ async def check_and_update_status():
                     period = "AM"
                 elif "(PM)" in period:
                     period = "PM"
+                else:
+                    period = None
                     
                 # end_date = datetime.strptime(date_parts[-1].strip(), "%d/%m/%y") if len(date_parts) > 1 else datetime.strptime(date_parts[0].strip(), "%d/%m/%y")
 
@@ -939,10 +943,10 @@ async def check_and_update_status():
                 # Compare end_date to tomorrows's date
                 if end_date.date() == tomorrow.date(): 
                     # Same day, status expires at some period
-                    if (period == sheet_name) or (period == "PM" and sheet_name == "AM"):
-                        print(f"⏭️ Status not expired in {period} for {sheet_name} sheet, skipping...")
+                    if (period == sheet_name) or (period == "PM" and sheet_name == "AM") or (period == None):
+                        print(f"⏭️ Status not expired in {period} for {sheet_name} sheet,skipping...")
                         continue
-                elif end_date.date() < tomorrow.date():
+                if end_date.date() < tomorrow.date():
                     print(f"🚨 Expired: {name}")
                     message += (f"🚨 Expired: {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
                     if name in stay_in_ppl:
