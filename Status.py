@@ -941,12 +941,14 @@ async def check_and_update_status():
                 # print(end_date)
 
                 # Compare end_date to tomorrows's date
-                if end_date.date() == tomorrow.date(): 
-                    # Same day, status expires at some period
-                    if (period == sheet_name) or (period == "PM" and sheet_name == "AM") or (period == None):
-                        print(f"⏭️ Status not expired in {period} for {sheet_name} sheet,skipping...")
-                        continue
-                if end_date.date() < tomorrow.date():
+                if end_date.date() <= tomorrow.date():
+                    # Check if same day, status expires at some period
+                    if end_date.date() == tomorrow.date(): 
+                        print("🔄 Same day, checking period...")
+                        if (period == sheet_name) or (period == "PM" and sheet_name == "AM") or (period == None):
+                            print(f"⏭️ Status not expired in {period} for {sheet_name} sheet,skipping...")
+                            continue
+                
                     print(f"🚨 Expired: {name}")
                     message += (f"🚨 Expired: {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
                     if name in stay_in_ppl:
