@@ -222,7 +222,7 @@ ptb.add_handler(CommandHandler("eg", eg))
 async def lifespan(_: FastAPI):
     await ptb.bot.deleteWebhook()  # Ensure webhook is reset
     await asyncio.sleep(1)  # Small delay to ensure completion
-    await ptb.bot.setWebhook("https://eofute7o0hxmomt.m.pipedream.net/webhook") # replace <your-webhook-url>
+    await ptb.bot.setWebhook("https://telegramstatusupdate.onrender.com/webhook") # replace <your-webhook-url>
     # Railway: https://updatestatus-production.up.railway.app/webhook
 
     # Debugging
