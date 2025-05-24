@@ -411,7 +411,7 @@ def extract_message(message):
     lines = message.split("\n")
 
     # Extract Status and Location (if in "Status:")
-    status_match = re.search(r"Status\s*:?\s*(.+?)\s*(?:@\s*(.+))?$", message, re.IGNORECASE | re.MULTILINE)
+    status_match = re.search(r"Status\s*:?\s*(.+?)\s*(?:[@\s*|to\s*](.+))?$", message, re.IGNORECASE | re.MULTILINE)
     raw_status = status_match.group(1).strip() if status_match else "Unknown"
     location = status_match.group(2).strip() if status_match and status_match.group(2) else ""
 
