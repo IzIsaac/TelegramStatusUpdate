@@ -95,15 +95,17 @@ How?
 Firstly, you copy the status message from whatsapp to here.
 Pls check that the format of the status message is correct because some people just dont like to follow the given format...
     
-After you send the message, (Give the bot a few seconds to boot up if its not already active), the bot should reply with the relevant extracted information such as the persons name, status, date, etc.
+After you send the message, (Give the bot a minute to boot up if its not already active), the bot should reply with the relevant extracted information such as the persons name, status, date, etc.
     
 Check, and please check, before pressing the '✅ Confirm' button.
     
-The bot will then start updating the relevant excel sheets. You can see what sheet the bot is updating, who and what status is being updated and the excel row and name that the update goes to. (For confirmation that the right row is being updated)
+The bot will then start updating the relevant excel sheets. You can see what sheet the bot is updating, who and what status is being updated and the excel name that the update goes to. (For confirmation that the right row is being updated)
 
 There are regular reminders to tell you to say that strength is updated, so don't ignore it. :/
 
 At the end of the day, 10:30pm, the bot automatically does a check for tomorrows status and clears any expired statuses.
+
+People who are 'Stay in' will be changed to 'Stay out' on Friday and changed back to 'Stay in' on Sunday.
 
 This bot is made in python and extracts information from status messages by matching keywords found. So please, use the format...
     
@@ -150,10 +152,7 @@ async def command_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await ptb.bot.send_message(chat_id=chat_id, text=text)
 ptb.add_handler(CommandHandler("help", command_list))
 
-# Function for other functions to send Telegram message
-async def send_telegram_message(message: str, chat_id: int):
-    await ptb.bot.send_message(chat_id=chat_id, text=message)
-
+# /eg Format explanation
 async def eg(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = '''🎭 You actually need this? Ok, i'll go through the details with you...
     
@@ -172,9 +171,9 @@ The format above is the general format for most statuses. 🔔 Anything in {Brac
 🪪 *Status*
 Start with the word "Status". 📍 Spaces and ":" are optional.
 Write your status, short form or spelled out correctly pls.
-🔔 "@" If you want to include the location right after.
+🔔 Use "@" or "to" If you want to include the location right after.
 📌 Eg: "Status: Outstation *@* KC3"
-I cannot stress how important this little "@" is. The bot won't detect the location if you don't add this...
+I cannot stress how important this little "@/to" is. The bot won't detect the location if you don't add this...
 
 👥 *R/Name*
 Start with "R/Name". 📍 Spaces and ":" are optional again, "R/Name" or "R/Names" is fine too. 
@@ -191,10 +190,14 @@ There is a specific formats for dates.
 Two ways, a string of digits, or with "/" in between.
 🔔 If the status lasts for multiple days, use a "-" / "to" in between the start and end date.
 📌 Eg: "150525" Means 15th May 2025
-"15/05/25" --> Say but with "/"
+"15/05/25" --> Same but with "/"
 "051525 - 101525" --> 5th to 10th May 2025
 "05/15/25 to 10/15/25" --> Same thing and you can use "to" instead
 Please *don't* spell it out like "15th May 2025".
+
+You can also specify the period that the status is valid using "(AM)" or "(PM)".
+With or without brackets is fine.
+📌 Eg: "15/05/25 (PM) - 16/05/25 (AM)" Meaning from afternoon to next morning
 
 📋 *Location*
 You get the drill right?
@@ -218,6 +221,10 @@ I can't think of anything else that needs explaining. Let me know if there are a
     await ptb.bot.send_message(chat_id=chat_id, text=text)
 ptb.add_handler(CommandHandler("eg", eg))
 
+# Function for other functions to send Telegram message
+async def send_telegram_message(message: str, chat_id: int):
+    await ptb.bot.send_message(chat_id=chat_id, text=message)
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     await ptb.bot.deleteWebhook()  # Ensure webhook is reset
@@ -238,7 +245,9 @@ async def lifespan(_: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 @app.get("/ping")
-async def ping():
+@app.head("/ping")  # Allow HEAD requests
+async def ping(request: Request):
+    print(f"Received {request.method} request from {request.client.host}")
     return {"message": "pong"}
 
 @app.post("/webhook")
