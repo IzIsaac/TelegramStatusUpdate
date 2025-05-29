@@ -873,13 +873,16 @@ async def check_and_update_status():
                    "Zhang Haoyuan", "Ong Jun Wei",
                    "Thong Wai Hung", "Lim Jia Hao",
                    "Alfred Leandro Liang", "Haziq Syahmi Bin Norzaim"}
-    timezone = datetime.now(ZoneInfo("UTC"))
-    hour = timezone.astimezone(ZoneInfo("Asia/Singapore")).hour
+    # Get current time in Singapore
+    timezone = datetime.now(ZoneInfo("UTC")).astimezone(ZoneInfo("Asia/Singapore"))
+    hour = timezone.hour
+    # print(hour) # Debugging
     tomorrow = timezone
     if hour >= 20:
         tomorrow += timedelta(days=1)
     tmr = tomorrow.strftime("%d/%m/%y")
     weekday = tomorrow.weekday()  # Monday = 0, Sunday = 6
+    # print(tmr, weekday) # Debugging
     message = ""
     if weekday == 4:  # Friday
         stay_in_ppl = set()
