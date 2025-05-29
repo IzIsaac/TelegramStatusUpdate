@@ -990,14 +990,18 @@ async def check_and_update_status():
     return "✅ Status check complete!"
 
 async def check_and_update_informal_status():
-    timezone = datetime.now(ZoneInfo("UTC"))
-    hour = timezone.astimezone(ZoneInfo("Asia/Singapore")).hour
+
+    # Get current time in Singapore
+    timezone = datetime.now(ZoneInfo("UTC")).astimezone(ZoneInfo("Asia/Singapore"))
+    hour = timezone.hour
+    # print(hour) # Debugging
     tomorrow = timezone
     if hour >= 20:
         tomorrow += timedelta(days=1)
     day = str(int(tomorrow.strftime("%d"))) # Convert "01" to "1" etc
     tmr = tomorrow.strftime("%d/%m/%y")
     weekday = tomorrow.weekday()  # Monday = 0, Sunday = 6
+    # print(tmr, weekday) # Debugging
     informal_sheet_name = tomorrow.strftime("%b %y")
     informal_sheets = [f"{informal_sheet_name} (AM)", f"{informal_sheet_name} (PM)"]
     message = ""
