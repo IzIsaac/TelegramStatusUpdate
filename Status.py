@@ -422,7 +422,11 @@ def extract_message(message):
     # Extract Status and Location (if in "Status:")
     status_match = re.search(r"Status\s*:?\s*(.+?)\s*(?:\s*(?:@|to)\s*(.+))?$", message, re.IGNORECASE | re.MULTILINE)
     raw_status = status_match.group(1).strip() if status_match else "Unknown"
-    location = status_match.group(2).strip() if status_match and status_match.group(2) else ""
+    raw_location = status_match.group(2).strip() if status_match and status_match.group(2) else ""
+    # Formatting location
+    # Regex pattern to match "AM", "(AM)", "PM", or "(PM)"
+    am_pm_pattern = r"\s*\(?(AM|PM)\)?\s*"
+    location = re.sub(am_pm_pattern, "", raw_location)
 
     # Convert status to official version
     status = "Invalid"
@@ -491,13 +495,13 @@ def extract_message(message):
 
         # Determine AM or PM from both start and end dates
         start_period, end_period = "", ""
-        if re.search(am_pattern, start_date.upper(), re.IGNORECASE):
+        if re.search(am_pattern, start_date.upper()):
             start_period = " (AM)"
-        elif re.search(pm_pattern, start_date.upper(), re.IGNORECASE):
+        elif re.search(pm_pattern, start_date.upper()):
             start_period = " (PM)"
-        if re.search(am_pattern, end_date.upper(), re.IGNORECASE):
+        if re.search(am_pattern, end_date.upper()):
             end_period = " (AM)"
-        elif re.search(pm_pattern, end_date.upper(), re.IGNORECASE):
+        elif re.search(pm_pattern, end_date.upper()):
             end_period = " (PM)"
 
         # Format dates
@@ -533,7 +537,7 @@ def extract_message(message):
 
         # Determine AM or PM
         # Combine text inputs to check for AM or PM
-        combined_text = f"{raw_status} {location} {raw_date_text}".upper()
+        combined_text = f"{raw_status} {raw_location} {raw_date_text}".upper()
 
         # Determine AM or PM
         start_am, start_pm = False, False
@@ -873,6 +877,7 @@ async def check_and_update_status():
                    "Zhang Haoyuan", "Ong Jun Wei",
                    "Thong Wai Hung", "Lim Jia Hao",
                    "Alfred Leandro Liang", "Haziq Syahmi Bin Norzaim"}
+
     # Get current time in Singapore
     timezone = datetime.now(ZoneInfo("UTC")).astimezone(ZoneInfo("Asia/Singapore"))
     hour = timezone.hour
@@ -884,6 +889,7 @@ async def check_and_update_status():
     weekday = tomorrow.weekday()  # Monday = 0, Sunday = 6
     # print(tmr, weekday) # Debugging
     message = ""
+
     if weekday == 4:  # Friday
         stay_in_ppl = set()
         print(f"📅 Friday! Updating all 'STAY IN' statuses to 'P - STAY OUT' for {len(stay_in_ppl)} personel.") # Clear stay-in list so no one stays in
@@ -920,8 +926,8 @@ async def check_and_update_status():
                 # Friday stay in to stay out
                 if weekday == 4 and current_status == "P - STAY IN SGC 377":
                     names.append(name)
-                # Sunday stay out to stay in
-                elif name in stay_in_ppl and current_status == "P - STAY OUT" and weekday == 6:
+                # Stay out to stay in except Saturday
+                elif name in stay_in_ppl and current_status == "P - STAY OUT" and weekday != 5:
                     stay_in_names.append(name)
                 else:
                     continue
@@ -990,7 +996,6 @@ async def check_and_update_status():
     return "✅ Status check complete!"
 
 async def check_and_update_informal_status():
-
     # Get current time in Singapore
     timezone = datetime.now(ZoneInfo("UTC")).astimezone(ZoneInfo("Asia/Singapore"))
     hour = timezone.hour
