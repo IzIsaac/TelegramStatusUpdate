@@ -142,31 +142,33 @@ async def command_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 /start - ✅ Introduction of StatusUpdate Bot
 
-/eg - 🪪 Example formats and explantions (TBC)
+/eg - 🪪 Example formats and explantions
 
 /id - 📩 Get chat id of current chatgroup (Debugging purposes)
 
 /check - 🔄 Runs the status check for official and informal excel sheets.
-(Before 8pm: Checks if status expired TODAY. After 8pm: Checks if status expires TOMORROW.)'''
+(Before 8pm: Checks if status expired TODAY. After 8pm: Checks if status expires TOMORROW.)
+
+/git - 👥 Instructions and link to the code on GitHub (Collaboration)'''
 
     await ptb.bot.send_message(chat_id=chat_id, text=text)
 ptb.add_handler(CommandHandler("help", command_list))
 
 # /eg Format explanation
 async def eg(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = '''🎭 You actually need this? Ok, i'll go through the details with you...
+    text = f'''🎭 You actually need this? Ok, i'll go through the details with you...
     
 📄 *Format*
-Status: {Your status} @ {Location you will be at}
-R/Name: {Rank and Name}
-{Any more Ranks and Names}
-Date: {Duration of status}
-Location: {Location if any}
-Reason: {Reason / Remarks for status if any}
+Status: {{Your status}} @ {{Location you will be at}}
+R/Name: {{Rank and Name}}
+{{Any more Ranks and Names}}
+Date: {{Duration of status}}
+Location: {{Location if any}}
+Reason: {{Reason / Remarks for status if any}}
 
 Obviously there are many variations. 📊 I'll give examples for those later.
 
-The format above is the general format for most statuses. 🔔 Anything in {Brackets} is the actual information that you are supposed to send.
+The format above is the general format for most statuses. 🔔 Anything in {{Brackets}} is the actual information that you are supposed to send.
 
 🪪 *Status*
 Start with the word "Status". 📍 Spaces and ":" are optional.
@@ -211,7 +213,7 @@ Anything in this part is used as the reason / remark.
 Thats the gist of it, moving onto additional details, i'll talk about MCs.
 
 🩺 *MC No.*
-📄 Format: "MC No. {Your MC No.}"
+📄 Format: "MC No. {{Your MC No.}}"
 With or without the "." and ":", of course.
 📍 This will replace whatever you wrote in "Reason/Remark"
 
@@ -220,6 +222,43 @@ I can't think of anything else that needs explaining. Let me know if there are a
 
     await ptb.bot.send_message(chat_id=chat_id, text=text)
 ptb.add_handler(CommandHandler("eg", eg))
+
+async def git(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = f'''📝 For those interested in the code of this bot or want to work on it.
+
+Branches: Allows contributors to work on different parts of the project separately.
+Pull requests: Let collaborators suggest changes before merging them.
+
+🔔 *Instructions*
+There are different methods to gain access to the code.
+
+1. Direct access
+Get the owner to add your GitHub username to the collaborators list. (GL)
+
+2. Edit online
+Acces the code through a GitHub codespace online.
+You can open it in a browser or code editor.
+⏭️ Link: https://bookish-spork-r979j5px7x635qjw.github.dev/ (Idk how to control the link)
+
+3. Edit using fork requests
+Using the link, go to the GitHub repository.
+⏭️ Link: https://github.com/IzIsaac/TelegramStatusUpdate
+
+On the top right of the repo page, you'll see a "Fork" button.
+Clicking it creates a copy of the repository in their account.
+
+You need to clone the forked version by running this command:
+git clone https://github.com/TheirUsername/TelegramStatusUpdate.git
+
+Edit the files locally and push it to the main branch when ready:
+git add .
+git commit -m "{{Your comments}}"
+git push origin main
+
+After pushing changes, go to Pull Requests in the repo.
+Click "New Pull Request", compare changes, and submit.
+
+I'll have to review and merge them...'''
 
 # Function for other functions to send Telegram message
 async def send_telegram_message(message: str, chat_id: int):
