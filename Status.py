@@ -158,7 +158,7 @@ ptb.add_handler(CommandHandler("help", command_list))
 async def eg(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = f'''🎭 You actually need this? Ok, i'll go through the details with you...
     
-📄 *Format*
+📄 **Format**
 Status: {{Your status}} @ {{Location you will be at}}
 R/Name: {{Rank and Name}}
 {{Any more Ranks and Names}}
@@ -238,7 +238,7 @@ Get the owner to add your GitHub username to the collaborators list. (GL)
 2. Edit online
 Acces the code through a GitHub codespace online.
 You can open it in a browser or code editor.
-⏭️ Link: https://bookish-spork-r979j5px7x635qjw.github.dev/ (Idk how to control the link)
+⏭️ Link: https://codespaces.new/IzIsaac/TelegramStatusUpdate?quickstart=1 (Idk how to control the link)
 
 3. Edit using fork requests
 Using the link, go to the GitHub repository.
@@ -259,6 +259,8 @@ After pushing changes, go to Pull Requests in the repo.
 Click "New Pull Request", compare changes, and submit.
 
 I'll have to review and merge them...'''
+    await ptb.bot.send_message(chat_id=chat_id, text=text)
+ptb.add_handler(CommandHandler("git", git))
 
 # Function for other functions to send Telegram message
 async def send_telegram_message(message: str, chat_id: int):
