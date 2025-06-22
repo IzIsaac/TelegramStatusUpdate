@@ -998,7 +998,6 @@ async def check_and_update_status():
                     period = None
                     
                 # end_date = datetime.strptime(date_parts[-1].strip(), "%d/%m/%y") if len(date_parts) > 1 else datetime.strptime(date_parts[0].strip(), "%d/%m/%y")
-
                 # print(end_date)
 
                 # Compare end_date to tomorrows's date
