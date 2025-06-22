@@ -614,6 +614,7 @@ def extract_message(message):
         if location_match:
             location = location_match.group(1).strip()
         
+        # Extract the reason/remarks
         remark_match = re.match(r"Remarks?\s*:?\s*(.*)", line, re.IGNORECASE)
         reason_match = re.match(r"Reasons?\s*:?\s*(.*)", line, re.IGNORECASE)
         if reason_match:
@@ -621,7 +622,8 @@ def extract_message(message):
         elif remark_match:
             reason = remark_match.group(1).strip()
 
-        mc_no_match = re.match(r"MC No.?\s*:?\s*(.*)", line, re.IGNORECASE)
+        # Extract the mc numeber and replace the reason
+        mc_no_match = re.match(r"MC\s*(No)?\.?\s*:?\s*(.*)", line, re.IGNORECASE)
         if mc_no_match:
             reason = "MC No. " + mc_no_match.group(1).strip()
 
