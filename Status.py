@@ -625,7 +625,7 @@ def extract_message(message):
         # Extract the mc numeber and replace the reason
         mc_no_match = re.match(r"MC\s*(No)?\.?\s*:?\s*(.*)", line, re.IGNORECASE)
         if mc_no_match:
-            reason = "MC No. " + mc_no_match.group(1).strip()
+            reason = "MC No. " + mc_no_match.group(2).strip()
 
     # Output extracted values
     # print("Extracted Raw Status:", raw_status)
