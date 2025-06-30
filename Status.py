@@ -523,7 +523,8 @@ def extract_message(message):
 
     # Check if it's a range (date-date or date - date)
     sheets_to_update, informal_sheets_to_update = [], []
-    informal_sheet_name = datetime.now().strftime("%b %y")
+    timezone = datetime.now(ZoneInfo("UTC")).astimezone(ZoneInfo("Asia/Singapore"))
+    informal_sheet_name = timezone.strftime("%b %y")
 
     # Format range dates
     if "to" in raw_date_text:
