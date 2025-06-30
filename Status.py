@@ -873,7 +873,6 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
                     print(f"📅 Day {day} is a weekday, processing...")
 
                 try:
-                    day = str(int(day))  # Convert 01 into 1
                     date_col = get_column_letter(formatted_headers.index(day)) # Index of day column
                 except ValueError:
                     success = False
