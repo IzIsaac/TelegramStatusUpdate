@@ -372,23 +372,36 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
     loading = await query.message.reply_text("🔄 Updating status...")
 
     # Get data and update sheet
-    status, informal_status, location, names, date_text, reason, sheets_to_update, informal_sheets_to_update = context.user_data.pop('status_data', (None,)*8)
+    status, informal_status, location, names, all_flag, date_text, reason, sheets_to_update, informal_sheets_to_update = context.user_data.pop('status_data', (None,)*9)
 
     if not status:
         print("⚠️ Error: No data found in context.")
         return
     
-    # Update excel sheet
-    complete = await update_sheet(status, location, names, date_text, reason, sheets_to_update, chat_id)
-    success = await update_informal_sheet(informal_status, names, date_text, informal_sheets_to_update, chat_id)
-    if complete and success:
-        await loading.edit_text("✅ All updates completed!")
+    # Update excel sheets
+    if all_flag:
+        for sheet in sheets_to_update:
+            names = get_unchanged_names(sheet)
+            complete_formal = await update_sheet(status, location, names, date_text, reason, [sheet], chat_id)
+
+            # Dynamically find matching informal sheet
+            informal_sheet = next((s for s in informal_sheets_to_update if sheet in s), None)
+            if informal_sheet:
+                complete_informal = await update_informal_sheet(informal_status, names, date_text, [informal_sheet], chat_id)
     else:
-        await loading.edit_text("⚠️ Error: Check logs for issue...")
+        complete_formal = await update_sheet(status, location, names, date_text, reason, sheets_to_update, chat_id)
+        complete_informal = await update_informal_sheet(informal_status, names, date_text, informal_sheets_to_update, chat_id)
+
+    if complete_formal and complete_informal:
+        await loading.edit_text(
+    "✅ All updates completed!" if complete_formal and complete_informal
+    else "⚠️ Error: Check logs for issue...")
+
 ptb.add_handler(CallbackQueryHandler(handle_confirmation))
 
 # Step 5: Define Official and Informal Status Mapping
 official_status_mapping = {
+    "PRESENT": "PRESENT",
     "ATTACH IN": "ATTACH IN",
     "DUTY": "DUTY",
     "UDO": "DUTY",
@@ -487,10 +500,10 @@ def extract_message(message):
     # Extract Names (Handles "R/Name" with or without ":" and same-line names)
     name_lines = []
     name_section = False
+    all_flag = False
 
     for line in lines:
         line = line.strip()
-        
         # If "R/Name" is found, start capturing names
         match = re.match(r"R/Names?\s*:?\s*(.+)", line, re.IGNORECASE)
         if match:
@@ -508,9 +521,6 @@ def extract_message(message):
         # If inside the "R/Name" section, collect names
         elif name_section:
             name_lines.append(line)
-
-    # Remove the first word (rank) from each name
-    names = [" ".join(name.split()[1:]) for name in name_lines if len(name.split()) > 1]
 
     # Extract Dates
     date_match = re.search(r"Dates?\s*:?\s*(.+)", message, re.IGNORECASE)
@@ -624,16 +634,24 @@ def extract_message(message):
             reason = remark_match.group(1).strip()
 
         # Extract the mc numeber and replace the reason
-        mc_no_match = re.match(r"MC\s*(No)?\.?\s*:?\s*(.*)", line, re.IGNORECASE)
+        mc_no_match = re.match(r"MC\s*(No|Number)?\s*\.?:?\s*(.*)", line, re.IGNORECASE)
         if mc_no_match:
             reason = "MC No. " + mc_no_match.group(2).strip()
 
+    if any(name.strip().lower() == "all" for name in name_lines):
+        all_flag, names = True, []
+        print("🔔 All-Flag triggered! Collecting namees of people without status...")
+    else:
+        # Remove the first word (rank) from each name if present
+        names = [" ".join(name.split()[1:]) if len(name.split()) > 1 else name for name in name_lines]
+
     # Output extracted values
-    # print("Extracted Raw Status:", raw_status)
+    # print("Extracted Raw Status:", raw_status) # Debugging
     print("Extracted Status:", status)
     print("Extracted Informal Status:", informal_status)
     print("Extracted Names:", names)
-    # print("Extracted Raw Date:", raw_date_text)
+    print("All-Flag Trigger:", all_flag)
+    # print("Extracted Raw Date:", raw_date_text) # Debugging
     print("Extracted Date:", date_text)
     print("Extracted Location:", location)
     print("Extracted Reason:", reason)
@@ -643,6 +661,7 @@ def extract_message(message):
         "status": status,
         "informal_status": informal_status,
         "names": names,
+        "all_flag": all_flag,
         "date_text": date_text,
         "location": location,
         "reason": reason,
@@ -748,6 +767,27 @@ def find_name_index(df, name, sheet_name, official):
     # No matches found
     print(f"⚠️ No valid matches found for '{name}' in '{sheet_name}' sheet.")
     return None
+
+def get_unchanged_names(sheet_name: str) -> list[str]: # Declare variable as str, output as list of str
+    try:
+        worksheet = sheet.worksheet(sheet_name)
+        data = worksheet.get_all_values()
+        headers = data[1]
+        df = pd.DataFrame(data[2:], columns=headers)
+
+        # Slice to only AE platoon people with valid status
+        unchanged_names = []
+        first_ae_index = df[df["Platoon"] == "AE"].index.min()
+        for i, row in df.iloc[first_ae_index:].iterrows():
+            platoon, name, date_range, current_status = row["Platoon"], row["Name"], row["Date"].strip(), row["Status"]
+            if platoon != "AE": # Stops when no longer AE ppl
+                break
+            if platoon == "AE" and current_status in ["PRESENT", "P - STAY IN SGC 377", "P - STAY OUT"]:
+                unchanged_names.append(name)
+        return unchanged_names
+    except Exception as e:
+        print(f"⚠️ Error accessing sheet '{sheet}': {e}")
+        return []
 
 # Step 7: Update Google Sheets for each sheet
 async def update_sheet(status, location, names, date_text, reason, sheets_to_update, chat_id):
@@ -921,7 +961,7 @@ async def check_and_update_status():
                    "Zhang Haoyuan", "Ong Jun Wei",
                    "Thong Wai Hung", "Lim Jia Hao",
                    "Alfred Leandro Liang", "Haziq Syahmi Bin Norzaim",
-                   "Huang Shifeng", "Tang Hoi Weng"}
+                   "Huang Shifeng"}
 
     # Get current time in Singapore
     timezone = datetime.now(ZoneInfo("UTC")).astimezone(ZoneInfo("Asia/Singapore"))
@@ -967,7 +1007,7 @@ async def check_and_update_status():
             platoon, name, date_range, current_status = row["Platoon"], row["Name"], row["Date"].strip(), row["Status"]
             if platoon != "AE": # Stops when no longer AE ppl
                 break
-            elif not date_range: # Skips ppl with no date
+            if not date_range: # Skips ppl with no date
                 # Friday stay in to stay out
                 if weekday == 4 and current_status == "P - STAY IN SGC 377":
                     names.append(name)
@@ -976,6 +1016,7 @@ async def check_and_update_status():
                     stay_in_names.append(name)
                 else:
                     continue
+
                 print(f"🚨 Expired: {name}")
                 message += (f"🚨 Expired: {sheet_name} | Name: {name} | Status: {row['Status']} | Dates: {row['Date']}\n")
                 continue
@@ -1000,7 +1041,7 @@ async def check_and_update_status():
                     period = None
                     
                 # end_date = datetime.strptime(date_parts[-1].strip(), "%d/%m/%y") if len(date_parts) > 1 else datetime.strptime(date_parts[0].strip(), "%d/%m/%y")
-                # print(end_date)
+                # print(end_date) # Debugging and alternate code?^^
 
                 # Compare end_date to tomorrows's date
                 if end_date.date() <= tomorrow.date():
