@@ -355,7 +355,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(response, reply_markup=reply_markup, parse_mode="Markdown"), 
 
     # Wait for user to confirm update
-    context.user_data["status_data"] = (status, informal_status, location, names, date_text, reason, sheets_to_update, informal_sheets_to_update)
+    context.user_data["status_data"] = (status, informal_status, location, names, all_flag, date_text, reason, sheets_to_update, informal_sheets_to_update)
 ptb.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))  # Handles all text messages
 
 async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE):
