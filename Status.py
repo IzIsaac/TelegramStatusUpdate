@@ -329,7 +329,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Process the message and extract details
     data = extract_message(message)
-    status, informal_status, location, names, date_text, reason, sheets_to_update, informal_sheets_to_update = data["status"], data["informal_status"], data["location"], data["names"], data["date_text"], data["reason"], data["sheets_to_update"], data["informal_sheets_to_update"]
+    status, informal_status, location, names, all_flag, date_text, reason, sheets_to_update, informal_sheets_to_update = data["status"], data["informal_status"], data["location"], data["names"], data["all_flag"], data["date_text"], data["reason"], data["sheets_to_update"], data["informal_sheets_to_update"]
 
     # Confirmation button
     keyboard = [
