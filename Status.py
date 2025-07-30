@@ -957,11 +957,10 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
 # Step 8: Check for expired status
 async def check_and_update_status():
     sheets = ["AM", "PM", "NIGHT"]
-    stay_in_ppl = {"Lin Jiarui", "Lee Yang Xuan",
-                   "Zhang Haoyuan", "Ong Jun Wei",
+    stay_in_ppl = {"Lee Yang Xuan", "Ong Jun Wei",
                    "Thong Wai Hung", "Lim Jia Hao",
                    "Alfred Leandro Liang", "Haziq Syahmi Bin Norzaim",
-                   "Huang Shifeng"}
+                   "Huang Shifeng", "Shawn Rajoo"}
 
     # Get current time in Singapore
     timezone = datetime.now(ZoneInfo("UTC")).astimezone(ZoneInfo("Asia/Singapore"))
