@@ -474,7 +474,7 @@ def extract_message(message):
     lines = message.split("\n")
 
     # Extract Status and Location (if in "Status:")
-    status_match = re.search(r"Status\s*:?\s*(.+?)\s*(?:\s*(?:@|to)\s*(.+))?$", message, re.IGNORECASE | re.MULTILINE)
+    status_match = re.search(r"Status\s*:?\s*(.+?)\s*(?:\s*(?:@|to|at)\s*(.+))?$", message, re.IGNORECASE | re.MULTILINE)
     raw_status = status_match.group(1).strip() if status_match else "Unknown"
     raw_location = status_match.group(2).strip() if status_match and status_match.group(2) else ""
     # Formatting location
@@ -639,7 +639,7 @@ def extract_message(message):
             reason = "MC No. " + mc_no_match.group(2).strip()
 
     if any(name.strip().lower() == "all" for name in name_lines):
-        all_flag, names = True, []
+        all_flag, names = True, ["Everyone without a status"]
         print("🔔 All-Flag triggered! Collecting namees of people without status...")
     else:
         # Remove the first word (rank) from each name if present
@@ -957,10 +957,9 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
 # Step 8: Check for expired status
 async def check_and_update_status():
     sheets = ["AM", "PM", "NIGHT"]
-    stay_in_ppl = {"Lee Yang Xuan", "Ong Jun Wei",
-                   "Thong Wai Hung", "Lim Jia Hao",
-                   "Alfred Leandro Liang", "Haziq Syahmi Bin Norzaim",
-                   "Huang Shifeng", "Shawn Rajoo"}
+    stay_in_ppl = {"Ong Jun Wei", "Thong Wai Hung", 
+                   "Lim Jia Hao", "Alfred Leandro Liang", 
+                   "Haziq Syahmi Bin Norzaim", "Huang Shifeng"}
 
     # Get current time in Singapore
     timezone = datetime.now(ZoneInfo("UTC")).astimezone(ZoneInfo("Asia/Singapore"))
