@@ -479,7 +479,7 @@ def extract_message(message):
     raw_location = status_match.group(2).strip() if status_match and status_match.group(2) else ""
     # Formatting location
     # Regex pattern to match "AM", "(AM)", "PM", or "(PM)"
-    am_pm_pattern = r"\s*\(?(AM|PM)\)?\s*"
+    am_pm_pattern = r"(?:\s*\b(?:AM|PM)\b\s*|\s*\((?:AM|PM)\)\s*)"
     location = re.sub(am_pm_pattern, "", raw_location)
 
     # Convert status to official version
