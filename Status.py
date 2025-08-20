@@ -959,7 +959,8 @@ async def check_and_update_status():
     sheets = ["AM", "PM", "NIGHT"]
     stay_in_ppl = {"Ong Jun Wei", "Thong Wai Hung", 
                    "Lim Jia Hao", "Alfred Leandro Liang", 
-                   "Haziq Syahmi Bin Norzaim", "Huang Shifeng"}
+                   "Haziq Syahmi Bin Norzaim", "Huang Shifeng",
+                   "Shawn Rajoo"}
 
     # Get current time in Singapore
     timezone = datetime.now(ZoneInfo("UTC")).astimezone(ZoneInfo("Asia/Singapore"))
