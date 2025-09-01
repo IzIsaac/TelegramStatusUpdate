@@ -409,8 +409,11 @@ official_status_mapping = {
     "GUARD": "DUTY",
     "REST": "DUTY",
     "WFH": "WFH",
+    "STAY IN": "P-STAY IN SGC 377",
+    "STAY OUT": "P-STAY OUT",
     "OUTSTATION": "OUTSTATION",
-    "BLOOD DONATION": "OUTSTATION",
+    "BLOOD": "OUTSTATION",
+    "DONATION": "OUTSTATION",
     "OS": "OUTSTATION",
     "CSE": "CSE",
     "COURSE": "CSE",
@@ -429,16 +432,22 @@ official_status_mapping = {
     "TO": "TO",
     "C": "CSE",
     "L": "LEAVE",
-    "O": "OFF"
+    "O": "OFF",
+    "1": 1,
+    1 : 1
 }
 
 informal_status_mapping = {
     "GD": "GD",
-    "DUTY": "GD",
     "UDO": "UDO",
     "CDOS": "CDOS",
+    "UDO REST": "DR",
+    "CDOS REST": "DR",
+    "DUTY": "GD",
     "GR": "GR",
     "REST": "GR",
+    "STAY IN": "",
+    "STAY OUT": "",
     "OUTSTATION": "OS",
     "BLOOD": "OS",
     "DONATION": "OS",
@@ -959,8 +968,7 @@ async def check_and_update_status():
     sheets = ["AM", "PM", "NIGHT"]
     stay_in_ppl = {"Ong Jun Wei", "Thong Wai Hung", 
                    "Lim Jia Hao", "Alfred Leandro Liang", 
-                   "Haziq Syahmi Bin Norzaim", "Huang Shifeng",
-                   "Shawn Rajoo"}
+                   "Haziq Syahmi Bin Norzaim", "Huang Shifeng",}
 
     # Get current time in Singapore
     timezone = datetime.now(ZoneInfo("UTC")).astimezone(ZoneInfo("Asia/Singapore"))
@@ -977,9 +985,13 @@ async def check_and_update_status():
     if weekday == 4:  # Friday
         stay_in_ppl = set()
         print(f"📅 Friday! Updating all 'STAY IN' statuses to 'P - STAY OUT' for {len(stay_in_ppl)} personel.") # Clear stay-in list so no one stays in
-    elif weekday == 5 or weekday == 6:  # Saturday or Sunday
+    elif weekday == 5:  # Saturday
+        stay_in_ppl = set() # Prevents changing to stay-in on Saturday
         sheets = ["NIGHT"] # Only update NIGHT sheet
-        print("📅 Weekend! Updating NIGHT sheet only.")
+        print("📅 Saturday! Updating NIGHT sheet only, all 'STAY IN' statuses remain as 'P - STAY OUT'.")
+    elif weekday == 6: # Sunday
+        sheets = ["NIGHT"]
+        print("📅 Sunday! Updating NIGHT sheet only.")
     else:
         print("📅 A weekday.")
     print(f"Checking statuses for {tmr}...")
