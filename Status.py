@@ -438,14 +438,15 @@ official_status_mapping = {
 }
 
 informal_status_mapping = {
-    "GD": "GD",
-    "UDO": "UDO",
-    "CDOS": "CDOS",
     "UDO REST": "DR",
     "CDOS REST": "DR",
-    "DUTY": "GD",
-    "GR": "GR",
+    "DUTY REST": "DR",
+    "UDO": "UDO",
+    "CDOS": "CDOS",
     "REST": "GR",
+    "GR": "GR",
+    "DUTY": "GD",
+    "GD": "GD",
     "STAY IN": "",
     "STAY OUT": "",
     "OUTSTATION": "OS",
