@@ -33,6 +33,8 @@ chat_id = GROUP_CHAT_ID # Default
 if not TELEGRAM_TOKEN:
     raise ValueError("Telegram Token is missing from the environment variables!")
 
+KNOWN_RANKS = {"REC", "PTE", "LCP", "CPL", "3SG", "2SG", "1SG", "SSG", "MSG", "WO", "SWO", "MWO", "OCT", "LTA", "CPT", "MAJ", "LTC", "COL"}
+
 # Step 1: Decode the base64 credentials
 print(f"Env Variable Found: {os.getenv('Google_Sheets_Credentials') is not None}")
 credentials_data = os.getenv('Google_Sheets_Credentials')
@@ -515,12 +517,13 @@ def extract_message(message):
     for line in lines:
         line = line.strip()
         # If "R/Name" is found, start capturing names
-        match = re.match(r"R/Names?\s*:?\s*(.+)", line, re.IGNORECASE)
+        match = re.match(r"R/Names?\s*:?\s*(.*)", line, re.IGNORECASE)
         if match:
             name_section = True
             names_in_line = match.group(1).strip()
             if names_in_line:  # If names are on the same line as "R/Name"
-                name_lines.extend(names_in_line.split("\n"))  
+                # name_lines.extend(names_in_line.split("\n"))  
+                name_lines.extend([n.strip() for n in names_in_line.split(",")]) # Handles multiple names in one line
             continue
 
         # Stop capturing names if "Dates:" is found
@@ -648,12 +651,13 @@ def extract_message(message):
         if mc_no_match:
             reason = "MC No. " + mc_no_match.group(2).strip()
 
+    ranks = KNOWN_RANKS
     if any(name.strip().lower() == "all" for name in name_lines):
         all_flag, names = True, ["Everyone without a status"]
         print("🔔 All-Flag triggered! Collecting namees of people without status...")
     else:
-        # Remove the first word (rank) from each name if present
-        names = [" ".join(name.split()[1:]) if len(name.split()) > 1 else name for name in name_lines]
+        # Remove the rank from each name if present
+        names = [remove_rank(name, ranks) for name in name_lines if name.strip()]
 
     # Output extracted values
     # print("Extracted Raw Status:", raw_status) # Debugging
@@ -778,7 +782,7 @@ def find_name_index(df, name, sheet_name, official):
     print(f"⚠️ No valid matches found for '{name}' in '{sheet_name}' sheet.")
     return None
 
-def get_unchanged_names(sheet_name: str) -> list[str]: # Declare variable as str, output as list of str
+def get_unchanged_names(sheet_name):
     try:
         worksheet = sheet.worksheet(sheet_name)
         data = worksheet.get_all_values()
@@ -798,6 +802,10 @@ def get_unchanged_names(sheet_name: str) -> list[str]: # Declare variable as str
     except Exception as e:
         print(f"⚠️ Error accessing sheet '{sheet}': {e}")
         return []
+
+def remove_rank(name, ranks):
+    parts = name.split()
+    return " ".join(parts[1:]) if parts and parts[0].upper() in ranks else name
 
 # Step 7: Update Google Sheets for each sheet
 async def update_sheet(status, location, names, date_text, reason, sheets_to_update, chat_id):
