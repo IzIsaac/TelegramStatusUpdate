@@ -542,7 +542,7 @@ def extract_message(message):
 
     # Convert date to fixed format (DD/MM/YY)
     # Regular expression for 6-digit (DDMMYY) dates
-    six_digit_pattern = r"\b(\d{1,2})[\/]?(\d{1,2})[\/]?(\d{2})\b"
+    six_digit_pattern = r"\b(\d{1,2})[\/]?(\d{1,2})[\/]?(\d{2,4})\b"
 
     # Check if it's a range (date-date or date - date)
     sheets_to_update, informal_sheets_to_update = [], []
@@ -570,22 +570,9 @@ def extract_message(message):
             end_period = " (PM)"
 
         # Format dates
-        date_match = re.search(six_digit_pattern, start_date)
-        if date_match:
-            start_date = f"{date_match.group(1)}/{date_match.group(2)}/{date_match.group(3)}"
-            # print(start_date)
-        else:
-            print("No valid date found.")
-        date_match = re.search(six_digit_pattern, end_date)
-        if date_match:
-            end_date = f"{date_match.group(1)}/{date_match.group(2)}/{date_match.group(3)}"
-            # print(end_date)
-        else:
-            print("No valid date found.")
-
+        start_date = format_date(start_date, six_digit_pattern)
+        end_date = format_date(end_date, six_digit_pattern)
         # Convert individual dates
-        start_date = re.sub(six_digit_pattern, r"\1/\2/\3", start_date)
-        end_date = re.sub(six_digit_pattern, r"\1/\2/\3", end_date)
         date_text = f"{start_date}{start_period} - {end_date}{end_period}"
 
         # date_text is a range, all sheets need to be updated
@@ -636,20 +623,22 @@ def extract_message(message):
     for line in lines:
         location_match = re.match(r"Locations?\s*:?\s*(.*)", line, re.IGNORECASE)
         if location_match:
-            location = location_match.group(1).strip()
-        
-        # Extract the reason/remarks
-        remark_match = re.match(r"Remarks?\s*:?\s*(.*)", line, re.IGNORECASE)
-        reason_match = re.match(r"Reasons?\s*:?\s*(.*)", line, re.IGNORECASE)
-        if reason_match:
-            reason = reason_match.group(1).strip()
-        elif remark_match:
-            reason = remark_match.group(1).strip()
+            location = location_match.group(1).strip()        
 
-        # Extract the mc numeber and replace the reason
+        # Extract the mc number and replace the reason
         mc_no_match = re.match(r"MC\s*(No|Number)?\s*\.?:?\s*(.*)", line, re.IGNORECASE)
         if mc_no_match:
             reason = "MC No. " + mc_no_match.group(2).strip()
+            continue
+
+        # Extract reason or remark if no mc number
+        if not reason:
+            reason_match = re.match(r"Reasons?\s*:?\s*(.*)", line, re.IGNORECASE)
+            remark_match = re.match(r"Remarks?\s*:?\s*(.*)", line, re.IGNORECASE)
+            if reason_match:
+                reason = reason_match.group(1).strip()
+            elif remark_match:
+                reason = remark_match.group(1).strip()
 
     ranks = KNOWN_RANKS
     if any(name.strip().lower() == "all" for name in name_lines):
@@ -657,7 +646,16 @@ def extract_message(message):
         print("🔔 All-Flag triggered! Collecting namees of people without status...")
     else:
         # Remove the rank from each name if present
-        names = [remove_rank(name, ranks) for name in name_lines if name.strip()]
+        names = []
+        for name in name_lines:
+            name = name.strip()
+            if not name:
+                continue
+            parts = name.split()
+            if parts[0].upper() in ranks:
+                names.append(" ".join(parts[1:]))
+            else:
+                names.append(name)
 
     # Output extracted values
     # print("Extracted Raw Status:", raw_status) # Debugging
@@ -803,9 +801,24 @@ def get_unchanged_names(sheet_name):
         print(f"⚠️ Error accessing sheet '{sheet}': {e}")
         return []
 
-def remove_rank(name, ranks):
-    parts = name.split()
-    return " ".join(parts[1:]) if parts and parts[0].upper() in ranks else name
+def format_date(raw_date, pattern):
+    match = re.search(pattern, raw_date)
+    if match:
+        day, month, year = match.groups()
+        if len(year) == 4:
+            year = year[2:] # Convert 4 digit to 2 digit
+        formatted = f"{day}/{month}/{year}"
+
+        # Validate the date
+        try:
+            datetime.strptime(formatted, "%d/%m/%y")
+            return formatted
+        except ValueError:
+            print(f"⚠️ Invalid date: {formatted}")
+            return ""  # Or return raw_date if you want to preserve it
+    else:
+        print(f"⚠️ No valid date found in '{raw_date}'")
+        return ""
 
 # Step 7: Update Google Sheets for each sheet
 async def update_sheet(status, location, names, date_text, reason, sheets_to_update, chat_id):
@@ -1027,9 +1040,9 @@ async def check_and_update_status():
             platoon, name, date_range, current_status = row["Platoon"], row["Name"], row["Date"].strip(), row["Status"]
             if platoon != "AE": # Stops when no longer AE ppl
                 break
-            if not date_range: # Skips ppl with no date
-                # Friday stay in to stay out
-                if weekday == 4 and current_status == "P - STAY IN SGC 377":
+            if not date_range: # For ppl with no date
+                # All stay in to stay out (For stay out ppl)
+                if name not in stay_in_ppl and current_status == "P - STAY IN SGC 377":
                     names.append(name)
                 # Stay out to stay in except Saturday
                 elif name in stay_in_ppl and current_status == "P - STAY OUT" and weekday != 5:
