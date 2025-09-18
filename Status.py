@@ -580,12 +580,7 @@ def extract_message(message):
         informal_sheets_to_update.extend([f"{informal_sheet_name} (AM)", f"{informal_sheet_name} (PM)"])        
     else:
         # Format single date
-        date_match = re.search(six_digit_pattern, raw_date_text)
-        if date_match:
-            date_text = f"{date_match.group(1)}/{date_match.group(2)}/{date_match.group(3)}"
-            # print(date_text)
-        else:
-            print("No valid date found.")
+        date_match = format_date(raw_date_text, six_digit_pattern)
 
         # Determine AM or PM
         # Combine text inputs to check for AM or PM
@@ -600,9 +595,6 @@ def extract_message(message):
             start_pm = True
             date_text += " (PM)"
         
-        # Convert date
-        date_text = re.sub(six_digit_pattern, r"\1/\2/\3", date_text)
-
         # Determine sheets to update
         if start_am:
             sheets_to_update.append("AM")
