@@ -224,6 +224,7 @@ I can't think of anything else that needs explaining. Let me know if there are a
     await ptb.bot.send_message(chat_id=chat_id, text=text)
 ptb.add_handler(CommandHandler("eg", eg))
 
+# /git Git collaboration explanation
 async def git(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = f'''📝 For those interested in the code of this bot or want to work on it.
 
@@ -262,6 +263,13 @@ Click "New Pull Request", compare changes, and submit.
 I'll have to review and merge them...'''
     await ptb.bot.send_message(chat_id=chat_id, text=text)
 ptb.add_handler(CommandHandler("git", git))
+
+# /delete Delete latest status sent in history
+async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    datasheet = data_sheet.worksheet["Status"]
+    datasheet.delete_rows(2)
+    await ptb.bot.send_message(chat_id=chat_id, text="✅ Successfully removed latest update in history.")
+ptb.add_handler(CommandHandler("delete", delete))
 
 # Function for other functions to send Telegram message
 async def send_telegram_message(message: str, chat_id: int):
