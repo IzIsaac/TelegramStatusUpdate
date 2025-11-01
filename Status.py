@@ -12,6 +12,7 @@ import tempfile
 import calendar
 import gspread
 import base64
+import json
 import re
 import os
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -33,7 +34,7 @@ chat_id = GROUP_CHAT_ID # Default
 if not TELEGRAM_TOKEN:
     raise ValueError("Telegram Token is missing from the environment variables!")
 
-KNOWN_RANKS = {"REC", "PTE", "LCP", "CPL", "3SG", "2SG", "1SG", "SSG", "MSG", "WO", "SWO", "MWO", "OCT", "LTA", "CPT", "MAJ", "LTC", "COL"}
+KNOWN_RANKS = ["REC", "PTE", "LCP", "CPL", "CFC", "3SG", "2SG", "1SG", "SSG", "MSG", "ME1T", "ME1","ME2","ME3","ME4","ME5","ME6","ME7","ME8", "WO", "SWO", "MWO", "OCT", "LTA", "CPT", "MAJ", "LTC", "COL"]
 
 # Step 1: Decode the base64 credentials
 print(f"Env Variable Found: {os.getenv('Google_Sheets_Credentials') is not None}")
@@ -56,15 +57,13 @@ if credentials_data:
 else:
     print("❌ Error: Google Sheets credentials not found in environment variables.")
 
-# Step 3: Open Google Sheet
-# google_sheets_url = os.getenv("google_sheets_url") # AI Sheet
+# Step 3: Open Google Sheet (Change all (ai_ / real_) to toggle)
 real_google_sheets_url = os.getenv("real_google_sheets_url")
-# sheet = client.open_by_url(google_sheets_url) # Change to toggle
-sheet = client.open_by_url(real_google_sheets_url) # Change to toggle
-# informal_google_sheets_url = os.getenv("informal_google_sheets_url") # AI Sheet
+sheet = client.open_by_url(real_google_sheets_url)
 real_informal_google_sheets_url = os.getenv("real_informal_google_sheets_url")
-# informal_sheet = client.open_by_url(informal_google_sheets_url) # Change to toggle
-informal_sheet = client.open_by_url(real_informal_google_sheets_url) # Change to toggle
+informal_sheet = client.open_by_url(real_informal_google_sheets_url) 
+data_google_sheets_url = os.getenv("data_google_sheets_url")
+data_sheet = client.open_by_url(data_google_sheets_url)
 print("✅ Successfully connected to Google Sheets!")
 
 # Step 4: Building the bot
@@ -394,7 +393,9 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
         complete_formal = await update_sheet(status, location, names, date_text, reason, sheets_to_update, chat_id)
         complete_informal = await update_informal_sheet(informal_status, names, date_text, informal_sheets_to_update, chat_id)
 
-    if complete_formal and complete_informal:
+    complete_data = await update_data_sheet(status, informal_status, location, names, all_flag, date_text, reason, sheets_to_update, informal_sheets_to_update)
+
+    if complete_formal and complete_informal and complete_data:
         await loading.edit_text(
     "✅ All updates completed!" if complete_formal and complete_informal
     else "⚠️ Error: Check logs for issue...")
@@ -577,7 +578,8 @@ def extract_message(message):
 
         # date_text is a range, all sheets need to be updated
         sheets_to_update.extend(["AM", "PM"])
-        informal_sheets_to_update.extend([f"{informal_sheet_name} (AM)", f"{informal_sheet_name} (PM)"])        
+        informal_sheets_to_update.extend([f"{informal_sheet_name} (AM)", f"{informal_sheet_name} (PM)"])
+
     else:
         # Format single date
         date_match = format_date(raw_date_text, six_digit_pattern)
@@ -609,6 +611,10 @@ def extract_message(message):
     # Night sheet updates only for specific statuses
     if status in ["DUTY", "CSE", "AO", "LEAVE", "OFF", "MC"] and (len(sheets_to_update) == 2 or sheets_to_update[0] == "PM"):
         sheets_to_update.append("NIGHT")
+    # Stay in / Stay out status
+    elif status in ["P-STAY IN SGC 377", "P-STAY OUT"]:
+        sheets_to_update = ["NIGHT"] # Only night sheet to be updated
+        informal_sheets_to_update = []
 
     # Extract Location and Reason (if provided separately)
     reason = "" # Location already has a check
@@ -812,6 +818,11 @@ def format_date(raw_date, pattern):
         print(f"⚠️ No valid date found in '{raw_date}'")
         return ""
 
+def clean_value(value):
+    if isinstance(value, (list, dict)):
+        return json.dumps(value)
+    return str(value)
+
 # Step 7: Update Google Sheets for each sheet
 async def update_sheet(status, location, names, date_text, reason, sheets_to_update, chat_id):
     success, message = True, ""
@@ -840,7 +851,7 @@ async def update_sheet(status, location, names, date_text, reason, sheets_to_upd
         # Collect all updates in a batch
         updates = []
 
-        # Update each person's record
+        # Update each person's status
         for name in names:
             row_index = find_name_index(df, name, sheet_name, official=True)
             if row_index == None:
@@ -975,6 +986,27 @@ async def update_informal_sheet(informal_status, names, date_text, informal_shee
         print(msg)
         message += f"{msg}\n"
     await send_telegram_message(message, chat_id=chat_id)
+    return success
+
+async def update_data_sheet(status, informal_status, names, all_flag, date_text, location, reason, sheets_to_update, informal_sheets_to_update):
+    success = True
+
+    # Connect to the data sheet
+    datasheet = data_sheet.worksheet("Status")
+    data = datasheet.get_all_values()
+    headers = data[0]
+    df = pd.DataFrame(data[1:], columns=headers)
+    # print(df)
+    
+    variables = [date_text, [status, informal_status, names, all_flag, date_text, location, reason, sheets_to_update, informal_sheets_to_update]]
+
+    # Update data sheet
+    try:
+        datasheet.insert_rows([[clean_value(value) for value in variables]], row=2) # Adds new info at the top
+    except Exception as e:
+        success = False
+        print("⚠️ Error, status history update failed...")
+
     return success
 
 # Step 8: Check for expired status
@@ -1120,6 +1152,7 @@ async def check_and_update_informal_status():
     informal_sheet_name = tomorrow.strftime("%b %y")
     informal_sheets = [f"{informal_sheet_name} (AM)", f"{informal_sheet_name} (PM)"]
     message = ""
+
     if weekday == 5 or weekday == 6:  
         msg = "📅 Its a weekend! No updates needed."
         print(msg)
@@ -1166,12 +1199,180 @@ async def check_and_update_informal_status():
         if names:
             print(f"📝 Updating '{sheet_name}' for names: {names} with status: {default_status}")
             await update_informal_sheet(default_status, names, tmr, [sheet_name], chat_id)
+
     msg = f"📅 Next run scheduled at: {scheduler.get_jobs()[0].next_run_time.strftime('%d/%m/%y %H:%M:%S')}"
     print(msg) # Debugging
     message += msg
     await send_telegram_message(message, chat_id=chat_id)
     return "✅ Status check complete!"
-        
+
+# Check and collect expired / ongoing statuses
+async def check_and_update_data_sheet():
+    success = True
+
+    # Get current time in Singapore
+    timezone = datetime.now(ZoneInfo("UTC")).astimezone(ZoneInfo("Asia/Singapore"))
+    hour = timezone.hour
+    # print(hour) # Debugging
+    tomorrow = timezone
+    if hour >= 20:
+        tomorrow += timedelta(days=1)
+
+    # Connect to the data sheet
+    datasheet = data_sheet.worksheet("Status")
+
+    # Define sheet structure
+    sheets_to_update = ["AM", "PM", "NIGHT"]
+    informal_sheet_name = timezone.strftime("%b %y")
+    informal_sheets_to_update = [f"{informal_sheet_name} (AM)", f"{informal_sheet_name} (PM)"]
+    sheet_structure = {
+        sheet: sheets_to_update,
+        informal_sheet: informal_sheets_to_update
+    }
+    updates_by_sheet = {
+        "AM": [],
+        "PM": [],
+        "NIGHT": [],
+        f"{informal_sheet_name} (AM)": [],
+        f"{informal_sheet_name} (PM)": []
+    }
+
+    # Read all rows
+    history = datasheet.get_all_records()
+    expired_rows, ongoing_rows = [], []
+
+    # Check for expired statuses
+    for i, row in enumerate(history, start = 2): # Iterate through history row by row with index i
+        # Get date of status
+        status_date = row["Ongoing Statuses"] # Header of column
+
+        # Formate date for comparison
+        date_parts = status_date.replace("(AM)", "").replace("(PM)", "").strip()
+        # print(status_date)
+        try:
+            date_range = status_date.split("-") # With AM/PM
+            date_parts = date_parts.split("-")
+            if len(date_parts) > 1:
+                start_date = datetime.strptime(date_parts[0].strip(), "%d/%m/%y")
+                end_date = datetime.strptime(date_parts[-1].strip(), "%d/%m/%y")
+            else:
+                start_date = datetime.strptime(date_parts[0].strip(), "%d/%m/%y")
+                end_date = start_date
+
+            # Check for expired statuses
+            if end_date.date() < tomorrow.date():
+                print(f"🚨 Expired: {status_date}")
+                expired_rows.append(i)
+
+            # Check for ongoing statuses
+            # Should check if AM / PM / NIGHT / Informal Sheets -> Use info from history
+            # Status is shown as present even though there should be a status
+            # Log the updates needed in a batch and push at the end
+            elif end_date.date() >= tomorrow.date() and start_date.date() <= tomorrow.date():
+                try:
+                    variables = json.loads(row["Information"]) # Header of column
+                except json.JSONDecodeError:
+                    variables = row["Information"]  # fallback to raw string
+                status, informal_status, name, date_text, location, reason = variables[0], variables[1], variables[2], variables[4], variables[5], variables[6], 
+                # print(f"⌛ Ongoing: {status_date}")
+                print(f"Trying to find name: {name}...")
+                
+                # Check official sheets
+                for sheet_name in sheets_to_update:
+                    print(f"⌛ Now processing: {sheet_name}")
+                    worksheet = sheet.worksheet(sheet_name)
+                    data = worksheet.get_all_values()
+                    headers = data[1]
+                    df = pd.DataFrame(data[2:], columns=headers)
+
+                    # Find current status of name
+                    row_index = find_name_index(df, name, sheet_name, official=True)
+                    current_row = df.iloc[row_index]
+                    current_status = current_row["Status"]
+                    print(current_status)
+
+                    # If unupdated with existing status, get update
+                    if current_status in ["PRESENT", "P - STAY OUT", "P - STAY IN SGC 377"]:
+                        # Normalize headers by stripping leading/trailing whitespace
+                        formatted_headers = [header.strip() for header in headers]
+
+                        # Column indexes
+                        try:
+                            status_col = formatted_headers.index("Status")
+                            date_col = formatted_headers.index("Date")
+                            remarks_col = formatted_headers.index("Remarks")
+                            location_col = formatted_headers.index("Location")
+                        except ValueError:
+                            success = False
+                            print(f"⚠️ Error: Required columns missing in {sheet_name} sheet.")
+                            continue
+                        
+                        # Save update info
+                        updates_by_sheet[sheet_name].extend([
+                            {"range": f"{chr(65 + status_col)}{row_index}", "values": [[status]]},
+                            {"range": f"{chr(65 + date_col)}{row_index}", "values": [[date_text]]},
+                            {"range": f"{chr(65 + remarks_col)}{row_index}", "values": [[reason]]},
+                            {"range": f"{chr(65 + location_col)}{row_index}", "values": [[location]]}
+                        ])
+
+                # Check informal sheets
+                for sheet_name in informal_sheets_to_update:
+                    print(f"⌛ Now processing: {sheet_name}") 
+                    worksheet = informal_sheet.worksheet(sheet_name)
+                    data = worksheet.get_all_values()
+                    headers = data[1]
+                    df = pd.DataFrame(data[2:], columns=headers)
+
+                    # Find current status of name
+                    row_index = find_name_index(df, name, sheet_name, official=False)
+                    day = str(int(tomorrow.strftime("%d"))) # Convert "01" to "1" etc
+                    current_row = df.iloc[row_index]
+                    current_status = current_row[day]
+
+                    if current_status in ["", "1", 1]:
+                        # Normalize headers by stripping leading/trailing whitespace
+                        formatted_headers = [header.strip() for header in headers]
+                        # Column index
+                        try:
+                            date_col = get_column_letter(formatted_headers.index(day)) # Index of day column
+                        except ValueError:
+                            success = False
+                            print(f"⚠️ Error: Column for day '{day}' not found in {sheet_name} sheet.")
+                            continue
+
+                        # Save update info
+                        updates_by_sheet[sheet_name].extend([
+                            {"range": f"{date_col}{row_index}", "values": [[informal_status]]}
+                        ])
+
+                ongoing_rows.append(i)
+
+        except ValueError as e: # Skip invalid dates
+            print(f"⚠️ Invalid date format for '{date_range}', {e}")
+            continue
+
+    # print(f"Ongoing rows: {ongoing_rows}") # Debugging
+    # print(f"Expired rows: {expired_rows}")
+
+    # Update all sheets
+    for excel_file, sheet_names in sheet_structure.items():
+        for sheet_name in sheet_names:
+            worksheet = excel_file.worksheet(sheet_name)
+            updates = updates_by_sheet[sheet_name]
+            if updates:
+                try:
+                    worksheet.batch_update(updates)
+                    print(f"✅ Successfully updated {sheet_name}.")
+                except Exception as e:
+                    success = False
+                    print(f"⚠️ Error during batch update in {sheet_name}: {e}")
+
+    # Delete all expired statuses
+    for i in reversed(expired_rows): # Start in reverse to avoid index shifts
+        datasheet.delete_rows(i)
+
+    return success
+
 async def send_reminder():
     global chat_id
     timezone = datetime.now(ZoneInfo("UTC"))
@@ -1205,14 +1406,17 @@ async def send_reminder():
 
 # Step 9: Run the checks everyday (Cannot be asnyc)
 def run_asyncio_task():
+    # Get current event loop of bot
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
+    # Run all check function
     loop.run_until_complete(check_and_update_status())
     loop.run_until_complete(check_and_update_informal_status())
+    loop.run_until_complete(check_and_update_data_sheet())
 
 def run_timed_reminders():
     try:
