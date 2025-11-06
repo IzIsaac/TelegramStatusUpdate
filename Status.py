@@ -401,7 +401,7 @@ async def handle_confirmation(update: Update, context: ContextTypes.DEFAULT_TYPE
         complete_formal = await update_sheet(status, location, names, date_text, reason, sheets_to_update, chat_id)
         complete_informal = await update_informal_sheet(informal_status, names, date_text, informal_sheets_to_update, chat_id)
 
-    complete_data = await update_data_sheet(status, informal_status, location, names, all_flag, date_text, reason, sheets_to_update, informal_sheets_to_update)
+    complete_data = await update_data_sheet(status, informal_status, names, all_flag, date_text, location, reason, sheets_to_update, informal_sheets_to_update)
 
     if complete_formal and complete_informal and complete_data:
         await loading.edit_text(
