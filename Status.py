@@ -590,7 +590,7 @@ def extract_message(message):
 
     else:
         # Format single date
-        date_match = format_date(raw_date_text, six_digit_pattern)
+        date_text = format_date(raw_date_text, six_digit_pattern)
 
         # Determine AM or PM
         # Combine text inputs to check for AM or PM
@@ -817,7 +817,7 @@ def format_date(raw_date, pattern):
 
         # Validate the date
         try:
-            datetime.strptime(formatted, "%d/%m/%y")
+            datetime.strptime(formatted, "%d/%m/%y") # Test to convert into a datetime object
             return formatted
         except ValueError:
             print(f"⚠️ Invalid date: {formatted}")
@@ -1022,7 +1022,7 @@ async def check_and_update_status():
     sheets = ["AM", "PM", "NIGHT"]
     stay_in_ppl = {"Ong Jun Wei", "Thong Wai Hung", 
                    "Lim Jia Hao", "Alfred Leandro Liang", 
-                   "Haziq Syahmi Bin Norzaim", "Huang Shifeng",}
+                   "Haziq Syahmi Bin Norzaim", "Huang Shifeng"}
 
     # Get current time in Singapore
     timezone = datetime.now(ZoneInfo("UTC")).astimezone(ZoneInfo("Asia/Singapore"))
