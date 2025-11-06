@@ -150,7 +150,9 @@ async def command_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
 /check - 🔄 Runs the status check for official and informal excel sheets.
 (Before 8pm: Checks if status expired TODAY. After 8pm: Checks if status expires TOMORROW.)
 
-/git - 👥 Instructions and link to the code on GitHub (Collaboration)'''
+/git - 👥 Instructions and link to the code on GitHub (Collaboration)
+
+/delete - ❌ Removes the latest status from the history sheet.'''
 
     await ptb.bot.send_message(chat_id=chat_id, text=text)
 ptb.add_handler(CommandHandler("help", command_list))
@@ -266,7 +268,7 @@ ptb.add_handler(CommandHandler("git", git))
 
 # /delete Delete latest status sent in history
 async def delete(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    datasheet = data_sheet.worksheet["Status"]
+    datasheet = data_sheet.worksheet("Status")
     datasheet.delete_rows(2)
     await ptb.bot.send_message(chat_id=chat_id, text="✅ Successfully removed latest update in history.")
 ptb.add_handler(CommandHandler("delete", delete))
